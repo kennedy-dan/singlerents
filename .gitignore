@@ -6,3 +6,5 @@
 /prisma/*.db
 .DS_Store
 *.log
+/work/
+
