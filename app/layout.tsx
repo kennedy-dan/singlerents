@@ -1,6 +1,6 @@
 import "./globals.css";
 export const metadata = {
-  title: "Singlerents",
+  title: "SingleRents | Find a room that feels like home",
   description: "Verified rooms for renters in Lagos",
 };
 export default function Layout({ children }) {

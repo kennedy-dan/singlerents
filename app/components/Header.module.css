@@ -11,6 +11,7 @@
 .actions {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 .srOnly {
   position: absolute;
@@ -76,7 +77,14 @@
   align-items: center;
   justify-content: center;
   color: inherit;
-  padding: 6px;
+  padding: 7px;
+  border-radius: 8px;
+  transition: background .2s, color .2s;
+}
+
+.notificationBell:hover {
+  background: #edf3eb;
+  color: #d85e41;
 }
 
 .notificationBadge {

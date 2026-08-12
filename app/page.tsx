@@ -380,19 +380,19 @@ function Room({ room, close, notify }) {
             </div>
           ))}
         </div>
-        <div className="form">
-          <div>
-            <b>Your rating: {reviewRating.toFixed(1)} / 5</b>
-            <div
-              role="radiogroup"
-              aria-label="Choose a rating"
-              style={{
-                display: "flex",
-                gap: 4,
-                flexWrap: "wrap",
-                marginTop: 8,
-              }}
-            >
+    <div className="form mt-8">
+  <div style={{ paddingTop: 12 }}>
+    <b>Your rating: {reviewRating.toFixed(1)} / 5</b>
+    <div
+      role="radiogroup"
+      aria-label="Choose a rating"
+      style={{
+        display: "flex",
+        gap: 4,
+        flexWrap: "wrap",
+        marginTop: 8,
+      }}
+    >
               {Array.from({ length: 9 }, (_, index) => (index + 2) / 2).map(
                 (value) => (
                   <button
