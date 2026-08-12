@@ -66,7 +66,7 @@ export async function POST(req) {
       },
     });
     const { publish } = await import('../../../lib/events');
-    publish(booking.listing.landlordId, 'notification', { type: 'BOOKING_REQUEST', body: 'You have a new viewing request.' });
+    void publish(booking.listing.landlordId, 'notification', { type: 'BOOKING_REQUEST', body: 'You have a new viewing request.' }).catch((error) => console.error("Unable to publish booking notification:", error));
     void sendEmail({ to: listing.landlord.email, subject: "New SingleRents viewing request", text: `A tenant has requested a viewing for ${listing.title}.`, html: emailParagraph(`A tenant has requested a viewing for ${listing.title}.`) });
     return NextResponse.json({ booking }, { status: 201 });
   } catch (e) {

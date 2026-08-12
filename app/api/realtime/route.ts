@@ -8,8 +8,12 @@ export async function GET(req) {
   let unsubscribe;
   const stream = new ReadableStream({
     start(controller) {
-      unsubscribe = subscribe(user.sub, (event, payload) => controller.enqueue(new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`)));
-      controller.enqueue(new TextEncoder().encode('event: connected\ndata: {}\n\n'));
+      subscribe(user.sub, (event, payload) => controller.enqueue(new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`)))
+        .then((off) => {
+          unsubscribe = off;
+          controller.enqueue(new TextEncoder().encode('event: connected\ndata: {}\n\n'));
+        })
+        .catch((error) => controller.error(error));
     },
     cancel() { unsubscribe?.(); },
   });

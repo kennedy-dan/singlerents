@@ -1,31 +1,39 @@
 {
   "name": "singlerents",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "vercel-build": "prisma generate && if [ \"$VERCEL_ENV\" = \"production\" ]; then prisma migrate deploy; fi && next build",
     "start": "NODE_ENV=production tsx server.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-"db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:deploy": "prisma migrate deploy",
     "test": "node --test"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
     "@reduxjs/toolkit": "^2.2.7",
+    "@vercel/functions": "^3.9.3",
     "bcryptjs": "^2.4.3",
+    "ioredis": "^6.0.0",
     "jose": "^5.9.6",
     "next": "^15.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-redux": "^9.1.2",
+    "ws": "^8.21.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "@types/ws": "^8.18.1",
     "prisma": "^6.0.0",
     "tsx": "^4.23.12",
     "typescript": "^6.0.3"

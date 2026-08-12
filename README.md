@@ -22,10 +22,10 @@ The product supports the MVP journey from discovery to contact and payment: tena
 ## Tech stack
 
 - **Frontend:** Next.js 15 (App Router), React 18, TypeScript, CSS
-- **Backend:** TypeScript Next.js route handlers with a custom Node server
+- **Backend:** TypeScript Next.js route handlers, including a Vercel WebSocket Function
 - **Database:** PostgreSQL with Prisma ORM
 - **Authentication:** bcrypt password hashing, JOSE JWTs, Google OAuth
-- **Realtime:** WebSockets
+- **Realtime:** Vercel WebSockets backed by Upstash Redis pub/sub
 - **Integrations:** Paystack, Mapbox, Cloudinary, SendGrid
 
 ## Local setup
@@ -72,7 +72,7 @@ PAYSTACK_PRO_PLAN_CODE=""
 PAYSTACK_ENTERPRISE_PLAN_CODE=""
 ```
 
-Generate the Prisma client and apply the database migrations:
+Generate the Prisma client and apply the database migrations locally:
 
 ```bash
 npm run db:generate
@@ -96,6 +96,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm start` | Serve the production build. |
 | `npm run db:generate` | Generate the Prisma client. |
 | `npm run db:migrate` | Create/apply Prisma development migrations. |
+| `npm run db:migrate:deploy` | Apply committed Prisma migrations (production-safe). |
+| `npm run vercel-build` | Vercel build: generates Prisma Client and applies migrations only in Vercel Production. |
 
 ## Project structure
 
@@ -108,7 +110,8 @@ app/
   profile/          Profile-management screen
 lib/                Authentication, database, email, event and business helpers
 prisma/             PostgreSQL schema and migration history
-server.ts           Next.js custom server and WebSocket upgrade handling
+server.ts           Local-development Next.js server and WebSocket upgrade handling
+vercel.json         Vercel WebSocket rewrite, Fluid Compute, and production build config
 ```
 
 ## Key product flows
@@ -127,6 +130,12 @@ server.ts           Next.js custom server and WebSocket upgrade handling
 - Protected server routes derive the signed-in user from the session and apply role checks where needed.
 - Payment webhook verification uses an HMAC signature before payment state is updated.
 - Secrets belong only in `.env`; do not commit that file.
+
+## Vercel deployment
+
+Vercel deploys the WebSocket endpoint as `app/api/ws/route.ts`; `vercel.json` rewrites the existing `/ws` client URL to it. The endpoint validates the existing `singlerents_session` JWT cookie before accepting an upgrade. Redis is required in every Vercel environment that serves realtime traffic: add an Upstash Redis integration or set `REDIS_URL` to a TLS Redis URL. Redis publishes cross-instance events, while PostgreSQL remains the durable source of messages and notifications; clients reconnect with exponential backoff and reload persisted data after reconnecting.
+
+The Vercel build command runs `prisma generate` for all deployments. It runs `prisma migrate deploy` only when Vercel sets `VERCEL_ENV=production`; never use `prisma migrate dev` in Vercel.
 
 ## Verification
 

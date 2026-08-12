@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run vercel-build",
+  "fluid": true,
+  "rewrites": [{ "source": "/ws", "destination": "/api/ws" }],
+  "functions": {
+    "app/api/ws/route.ts": { "maxDuration": 300 }
+  }
+}

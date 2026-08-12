@@ -19,15 +19,30 @@ export default function Header() {
     fetch("/api/notifications")
       .then((r) => (r.ok ? r.json() : null))
       .then((v) => setUnread(v?.unread || 0));
-    const socket = new WebSocket(
-      `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
-    );
-    socket.onmessage = ({ data }) => {
-      try {
-        if (JSON.parse(data).event === "notification") setUnread((n) => n + 1);
-      } catch {}
+    let socket: WebSocket | undefined;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let reconnectDelay = 1000;
+    let stopped = false;
+    const connect = () => {
+      socket = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+      socket.onopen = () => { reconnectDelay = 1000; };
+      socket.onmessage = ({ data }) => {
+        try {
+          if (JSON.parse(data).event === "notification") setUnread((n) => n + 1);
+        } catch {}
+      };
+      socket.onclose = () => {
+        if (stopped) return;
+        reconnectTimer = setTimeout(connect, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+      };
     };
-    return () => socket.close();
+    connect();
+    return () => {
+      stopped = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      socket?.close();
+    };
   }, [user]);
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });

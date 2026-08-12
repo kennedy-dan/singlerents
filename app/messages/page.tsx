@@ -1,4 +1,98 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Header from '../components/Header';
-export default function Messages(){const [user,setUser]=useState(null),[items,setItems]=useState([]),[current,setCurrent]=useState(null),[body,setBody]=useState('');async function load(){const [u,c]=await Promise.all([fetch('/api/auth/me'),fetch('/api/messages')]);if(u.ok)setUser((await u.json()).user);if(c.ok){const v=(await c.json()).conversations;setItems(v);if(!current&&v[0])setCurrent(v[0])}}useEffect(()=>{load()},[]);useEffect(()=>{if(!user)return;const s=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`);s.onmessage=({data})=>{try{if(JSON.parse(data).event==='message'){load();if(current)open(current.id)}}catch{}};return()=>s.close()},[user,current?.id]);async function open(id){const r=await fetch(`/api/messages?conversationId=${id}`);if(r.ok)setCurrent((await r.json()).conversation)}async function send(e){e.preventDefault();if(!current||!body)return;const r=await fetch('/api/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversationId:current.id,body})});if(r.ok){setBody('');open(current.id);load()}}const other=c=>c?.tenantId===user?.id?c.landlord:c.tenant;return <><Header/><main className="page"><p className="eyebrow">INBOX</p><h1>Messages</h1>{!user?<p>Please <a href="/login">log in</a> to view messages.</p>:<div className="inbox"><aside>{items.map(c=><button className={'conversation '+(c.id===current?.id?'selected':'')} onClick={()=>open(c.id)} key={c.id}><b>{other(c)?.name}</b><small>{c.messages?.[0]?.body||'Start a conversation'}</small></button>)}{!items.length&&<p className="muted">Message a landlord from a room listing to begin.</p>}</aside><section className="panel thread">{current?<><h3>{other(current)?.name}</h3><div className="thread-messages">{current.messages?.map(m=><p className={m.senderId===user.id?'mine':'theirs'} key={m.id}>{m.body}</p>)}</div><form className="message-form" onSubmit={send}><input value={body} onChange={e=>setBody(e.target.value)} placeholder="Write a message"/><button className="button">Send</button></form></>:<p className="muted">Choose a conversation.</p>}</section></div>}</main></>}
+
+export default function Messages() {
+  const [user, setUser] = useState(null);
+  const [items, setItems] = useState([]);
+  const [current, setCurrent] = useState(null);
+  const [body, setBody] = useState('');
+  const currentId = useRef<string | null>(null);
+
+  const load = useCallback(async () => {
+    const [userResponse, conversationsResponse] = await Promise.all([
+      fetch('/api/auth/me'),
+      fetch('/api/messages'),
+    ]);
+
+    if (userResponse.ok) setUser((await userResponse.json()).user);
+    if (conversationsResponse.ok) {
+      const conversations = (await conversationsResponse.json()).conversations;
+      setItems(conversations);
+      setCurrent((selected) => selected || conversations[0] || null);
+    }
+  }, []);
+
+  const open = useCallback(async (id: string) => {
+    const response = await fetch(`/api/messages?conversationId=${id}`);
+    if (response.ok) setCurrent((await response.json()).conversation);
+  }, []);
+
+  useEffect(() => {
+    currentId.current = current?.id || null;
+  }, [current?.id]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let socket: WebSocket | undefined;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let reconnectDelay = 1000;
+    let stopped = false;
+
+    const connect = () => {
+      socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+      socket.onopen = () => {
+        reconnectDelay = 1000;
+        void load();
+      };
+      socket.onmessage = ({ data }) => {
+        try {
+          if (JSON.parse(data).event === 'message') {
+            void load();
+            if (currentId.current) void open(currentId.current);
+          }
+        } catch {
+          // Ignore malformed WebSocket frames.
+        }
+      };
+      socket.onclose = () => {
+        if (stopped) return;
+        reconnectTimer = setTimeout(connect, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+      };
+    };
+
+    connect();
+    return () => {
+      stopped = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      socket?.close();
+    };
+  }, [user?.id, load, open]);
+
+  async function send(event) {
+    event.preventDefault();
+    if (!current || !body) return;
+    const response = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversationId: current.id, body }),
+    });
+    if (response.ok) {
+      setBody('');
+      void open(current.id);
+      void load();
+    }
+  }
+
+  const other = (conversation) =>
+    conversation?.tenantId === user?.id ? conversation.landlord : conversation.tenant;
+
+  return <><Header /><main className="page"><p className="eyebrow">INBOX</p><h1>Messages</h1>{!user ? <p>Please <a href="/login">log in</a> to view messages.</p> : <div className="inbox"><aside>{items.map((conversation) => <button className={'conversation ' + (conversation.id === current?.id ? 'selected' : '')} onClick={() => open(conversation.id)} key={conversation.id}><b>{other(conversation)?.name}</b><small>{conversation.messages?.[0]?.body || 'Start a conversation'}</small></button>)}{!items.length && <p className="muted">Message a landlord from a room listing to begin.</p>}</aside><section className="panel thread">{current ? <><h3>{other(current)?.name}</h3><div className="thread-messages">{current.messages?.map((message) => <p className={message.senderId === user.id ? 'mine' : 'theirs'} key={message.id}>{message.body}</p>)}</div><form className="message-form" onSubmit={send}><input value={body} onChange={(event) => setBody(event.target.value)} placeholder="Write a message" /><button className="button">Send</button></form></> : <p className="muted">Choose a conversation.</p>}</section></div>}</main></>;
+}

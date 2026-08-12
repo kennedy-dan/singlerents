@@ -92,11 +92,11 @@ export async function POST(req) {
       },
     });
     const { publish } = await import("../../../lib/events");
-    publish(recipient, "message", { message, conversationId: conversation.id });
-    publish(recipient, "notification", {
+    void publish(recipient, "message", { message, conversationId: conversation.id }).catch((error) => console.error("Unable to publish message event:", error));
+    void publish(recipient, "notification", {
       type: "MESSAGE",
       body: "You have a new message.",
-    });
+    }).catch((error) => console.error("Unable to publish notification event:", error));
     void sendEmail({ to: recipientUser?.email, subject: "You have a new SingleRents message", text: `${u.email} sent you a message: ${body}`, html: `${emailParagraph("You have a new message on SingleRents.")}${emailParagraph(body)}` });
     return NextResponse.json(
       { message, conversationId: conversation.id },
