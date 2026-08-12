@@ -35,7 +35,7 @@ export async function GET(req) {
     type = p.get("type"),
     amenities = p.getAll("amenity").filter(Boolean),
     mine = p.get("mine") === "true";
-  let where = {
+  let where: any = {
     status: "PUBLISHED",
     price: { lte: max },
     ...(type ? { type } : {}),

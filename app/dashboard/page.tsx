@@ -6,12 +6,12 @@ const naira = (n) =>
   `₦${Math.round(Number(n || 0) / 100).toLocaleString("en-NG")}`;
 const rent = (n) => `₦${Number(n || 0).toLocaleString("en-NG")}`;
 export default function Dashboard() {
-  const [user, setUser] = useState(),
-    [bookings, setBookings] = useState([]),
-    [rooms, setRooms] = useState([]),
-    [earnings, setEarnings] = useState(),
+  const [user, setUser] = useState<any>(null),
+    [bookings, setBookings] = useState<any[]>([]),
+    [rooms, setRooms] = useState<any[]>([]),
+    [earnings, setEarnings] = useState<any>(null),
     [notice, setNotice] = useState(""),
-    [banks, setBanks] = useState([]),
+    [banks, setBanks] = useState<any[]>([]),
     [banksError, setBanksError] = useState(""),
     [banksLoading, setBanksLoading] = useState(false);
   const load = async () => {
@@ -54,7 +54,7 @@ export default function Dashboard() {
       active = false;
     };
   }, [user]);
-  const pay = async (b) => {
+  const pay = async (b: any) => {
     const r = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +65,7 @@ export default function Dashboard() {
       ? location.assign(v.authorizationUrl)
       : setNotice(v.error || "Unable to begin payment.");
   };
-  const confirm = async (b) => {
+  const confirm = async (b: any) => {
     const value = prompt(
       "Agreed rent in naira",
       b.leaseAmount || b.listing.price,
@@ -83,7 +83,7 @@ export default function Dashboard() {
     );
     if (r.ok) load();
   };
-  const connect = async (e) => {
+  const connect = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const r = await fetch("/api/payments/subaccount", {
         method: "POST",
@@ -150,7 +150,7 @@ export default function Dashboard() {
                 name="accountNumber"
                 required
                 inputMode="numeric"
-                maxLength="10"
+                maxLength={10}
                 placeholder="10-digit bank account number"
               />
               <select
@@ -192,6 +192,9 @@ export default function Dashboard() {
               <span className={"status " + x.status.toLowerCase()}>
                 {x.status}
               </span>
+              <Link className="link" href={`/dashboard/rooms/${x.id}/edit`}>
+                Edit
+              </Link>
             </div>
           ))}
           {!rooms.length && (
@@ -205,7 +208,7 @@ export default function Dashboard() {
     </>
   );
 }
-function Bookings({ bookings, tenant, pay, confirm }) {
+function Bookings({ bookings, tenant = false, pay, confirm }: { bookings: any[]; tenant?: boolean; pay?: (booking: any) => Promise<void>; confirm?: (booking: any) => Promise<void> }) {
   return (
     <section className="panel">
       {bookings.map((b) => (

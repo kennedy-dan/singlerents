@@ -106,7 +106,7 @@ export async function POST(req) {
         kind: input.kind,
       },
     });
-    const payload = {
+    const payload: Record<string, any> = {
       email: user.email,
       // The tenant pays the advertised rent. Paystack sends 3% to the platform
       // and settles the remaining 97% to the landlord's subaccount.

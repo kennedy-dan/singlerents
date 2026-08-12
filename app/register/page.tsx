@@ -44,7 +44,7 @@ export default function Register() {
         <input
           required
           type="password"
-          minLength="8"
+          minLength={8}
           placeholder="Password (8+ characters)"
           onChange={(e) => setX({ ...x, password: e.target.value })}
         />

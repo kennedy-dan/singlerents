@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
+declare global {
+  interface Window {
+    mapboxgl?: any;
+  }
+}
+
 function popupContent(listing) {
   const content = document.createElement("div");
   const title = document.createElement("strong");
@@ -12,8 +18,8 @@ function popupContent(listing) {
 }
 
 export default function Map({ listings = [], onSelect }) {
-  const element = useRef(null);
-  const map = useRef(null);
+  const element = useRef<HTMLDivElement>(null);
+  const map = useRef<any>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {

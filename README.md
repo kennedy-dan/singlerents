@@ -21,8 +21,8 @@ The product supports the MVP journey from discovery to contact and payment: tena
 
 ## Tech stack
 
-- **Frontend:** Next.js 15 (App Router), React 18, CSS
-- **Backend:** Next.js route handlers with a custom Node server
+- **Frontend:** Next.js 15 (App Router), React 18, TypeScript, CSS
+- **Backend:** TypeScript Next.js route handlers with a custom Node server
 - **Database:** PostgreSQL with Prisma ORM
 - **Authentication:** bcrypt password hashing, JOSE JWTs, Google OAuth
 - **Realtime:** WebSockets
@@ -108,7 +108,7 @@ app/
   profile/          Profile-management screen
 lib/                Authentication, database, email, event and business helpers
 prisma/             PostgreSQL schema and migration history
-server.js           Next.js custom server and WebSocket upgrade handling
+server.ts           Next.js custom server and WebSocket upgrade handling
 ```
 
 ## Key product flows

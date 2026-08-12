@@ -130,14 +130,14 @@ async function submit(e) {
           <input
             required
             type="number"
-            min="1"
+            min={1}
             placeholder="Monthly rent (₦)"
             value={form.price}
             onChange={(e) => update("price", e.target.value)}
           />
           <input
             required
-            minLength="10"
+            minLength={10}
             placeholder="Full address, e.g. 12 Herbert Macaulay Way, Yaba, Lagos"
             value={form.location}
             onChange={(e) => update("location", e.target.value)}
