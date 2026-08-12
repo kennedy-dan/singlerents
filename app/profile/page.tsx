@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
+import PageLoader from "../components/PageLoader";
 
 export default function Profile() {
   const [profile, setProfile] = useState(null),
     [form, setForm] = useState({ name: "", phone: "" }),
-    [notice, setNotice] = useState("");
+    [notice, setNotice] = useState(""),
+    [loading, setLoading] = useState(true);
   const load = () =>
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
@@ -13,7 +15,8 @@ export default function Profile() {
         setProfile(v?.profile || null);
         if (v?.profile)
           setForm({ name: v.profile.name, phone: v.profile.phone || "" });
-      });
+      })
+      .finally(() => setLoading(false));
   useEffect(() => {
   load();
 }, []);
@@ -27,6 +30,8 @@ export default function Profile() {
     setNotice(r.ok ? "Profile saved." : "Unable to save your profile.");
     if (r.ok) load();
   }
+  if (loading)
+    return <><Header /><PageLoader label="Loading profile…" /></>;
   if (!profile)
     return (
       <>

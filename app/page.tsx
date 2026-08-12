@@ -54,7 +54,8 @@ export default function Home() {
     }),
     [rooms, setRooms] = useState([]),
     [selected, setSelected] = useState(null),
-    [notice, setNotice] = useState("");
+    [notice, setNotice] = useState(""),
+    [loading, setLoading] = useState(true);
   async function load() {
     const p = new URLSearchParams({
       q: filters.q,
@@ -67,8 +68,12 @@ export default function Home() {
       .filter(Boolean)
       .forEach((amenity) => p.append("amenity", amenity));
     if (!p.get("type")) p.delete("type");
-    const r = await fetch(`/api/listings?${p}`);
-    if (r.ok) setRooms((await r.json()).listings);
+    try {
+      const r = await fetch(`/api/listings?${p}`);
+      if (r.ok) setRooms((await r.json()).listings);
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => {
     load();
@@ -132,7 +137,7 @@ export default function Home() {
       <section className="section" id="rooms">
         <p className="eyebrow">LIVE LISTINGS</p>
         <h2>Rooms posted by landlords</h2>
-        <p className="muted">{rooms.length} rooms available</p>
+        <p className="muted">{loading ? "Loading rooms…" : `${rooms.length} rooms available`}</p>
         <div className="grid">
           {rooms.map((r) => (
             <article className="card" key={r.id}>
@@ -159,7 +164,7 @@ export default function Home() {
             </article>
           ))}
         </div>
-        {!rooms.length && (
+        {!loading && !rooms.length && (
           <div className="panel empty">
             No published rooms match this search yet.
           </div>

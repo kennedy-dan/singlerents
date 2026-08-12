@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "../components/Header";
+import PageLoader from "../components/PageLoader";
 const naira = (n) =>
   `₦${Math.round(Number(n || 0) / 100).toLocaleString("en-NG")}`;
 const rent = (n) => `₦${Number(n || 0).toLocaleString("en-NG")}`;
@@ -13,7 +14,8 @@ export default function Dashboard() {
     [notice, setNotice] = useState(""),
     [banks, setBanks] = useState<any[]>([]),
     [banksError, setBanksError] = useState(""),
-    [banksLoading, setBanksLoading] = useState(false);
+    [banksLoading, setBanksLoading] = useState(false),
+    [loading, setLoading] = useState(true);
   const load = async () => {
     const r = await Promise.all(
       [
@@ -27,6 +29,7 @@ export default function Dashboard() {
     if (r[1].ok) setBookings((await r[1].json()).bookings);
     if (r[2].ok) setRooms((await r[2].json()).listings);
     if (r[3].ok) setEarnings(await r[3].json());
+    setLoading(false);
   };
   useEffect(() => {
     load();
@@ -54,6 +57,7 @@ export default function Dashboard() {
       active = false;
     };
   }, [user]);
+  if (loading) return <><Header /><PageLoader label="Loading dashboard…" /></>;
   const pay = async (b: any) => {
     const r = await fetch("/api/payments/initialize", {
         method: "POST",

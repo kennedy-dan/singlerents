@@ -1,13 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import Header from "../../components/Header";
+import PageLoader from "../../components/PageLoader";
 export default function Billing() {
   const [subscriptions, setSubscriptions] = useState([]),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [loading, setLoading] = useState(true);
   useEffect(() => {
     fetch("/api/subscriptions")
       .then((r) => (r.ok ? r.json() : null))
-      .then((v) => setSubscriptions(v?.subscriptions || []));
+      .then((v) => setSubscriptions(v?.subscriptions || []))
+      .finally(() => setLoading(false));
   }, []);
   async function choose(plan) {
     const r = await fetch("/api/payments/initialize", {
@@ -21,6 +24,7 @@ export default function Billing() {
   return (
     <>
       <Header />
+      {loading ? <PageLoader label="Loading billing…" /> :
       <main className="page">
         <p className="eyebrow">LANDLORD BILLING</p>
         <h1>Plans and billing</h1>
@@ -72,6 +76,7 @@ export default function Billing() {
           )}
         </section>
       </main>
+      }
     </>
   );
 }

@@ -49,6 +49,8 @@ Set the values in `.env`. At a minimum, `DATABASE_URL` and `JWT_SECRET` are requ
 # Core
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/singlerents"
 JWT_SECRET="replace-with-a-long-random-secret"
+# Use your deployed HTTPS domain in production so email links are clickable.
+APP_URL="http://localhost:3000"
 
 # Map and uploads
 NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=""
@@ -133,7 +135,7 @@ vercel.json         Vercel WebSocket rewrite, Fluid Compute, and production buil
 
 ## Vercel deployment
 
-Vercel deploys the WebSocket endpoint as `app/api/ws/route.ts`; `vercel.json` rewrites the existing `/ws` client URL to it. The endpoint validates the existing `singlerents_session` JWT cookie before accepting an upgrade. Redis is required in every Vercel environment that serves realtime traffic: add an Upstash Redis integration or set `REDIS_URL` to a TLS Redis URL. Redis publishes cross-instance events, while PostgreSQL remains the durable source of messages and notifications; clients reconnect with exponential backoff and reload persisted data after reconnecting.
+Vercel deploys the WebSocket endpoint as `app/api/ws/route.ts`; `vercel.json` rewrites the existing `/ws` client URL to it. The endpoint validates the existing `singlerents_session` JWT cookie before accepting an upgrade. Redis is required in every Vercel environment that serves realtime traffic: add an Upstash Redis integration or set `REDIS_URL` to a TLS Redis URL. Redis publishes cross-instance events, while PostgreSQL remains the durable source of messages and notifications; clients reconnect with exponential backoff and reload persisted data after reconnecting. Set `APP_URL` to the canonical HTTPS production domain (for example, `https://your-domain.com`) so verification emails always link to the live app rather than a preview deployment.
 
 The Vercel build command runs `prisma generate` for all deployments. It runs `prisma migrate deploy` only when Vercel sets `VERCEL_ENV=production`; never use `prisma migrate dev` in Vercel.
 

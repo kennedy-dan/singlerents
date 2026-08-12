@@ -19,14 +19,25 @@ export async function createEmailVerificationToken(userId) {
   return token;
 }
 
-export async function sendVerificationEmail({ email, name, token, origin }) {
+export function applicationUrl(requestOrigin?: string) {
+  const configuredUrl = process.env.APP_URL;
+  if (configuredUrl) return configuredUrl;
+
+  // Vercel supplies this hostname automatically. APP_URL should still be set
+  // to the canonical production domain so emails never point at a preview.
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  if (requestOrigin) return requestOrigin;
+  throw new Error("APP_URL is required to send verification emails.");
+}
+
+export async function sendVerificationEmail({ email, name, token, origin }: { email: string; name: string; token: string; origin?: string }) {
   const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!apiKey || !from) {
     throw new Error("SendGrid email service is not configured");
   }
 
-  const confirmUrl = new URL("/verify-email", origin);
+  const confirmUrl = new URL("/verify-email", applicationUrl(origin));
   confirmUrl.searchParams.set("token", token);
   const confirmationLink = confirmUrl.toString();
   const safeConfirmationLink = escapeHtml(confirmationLink);
@@ -54,9 +65,13 @@ export async function sendVerificationEmail({ email, name, token, origin }) {
   <body>
     <p>Hi ${safeName},</p>
     <p>Confirm that this is your email address to finish creating your SingleRents account.</p>
-    <p>
-      <a href="${safeConfirmationLink}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#eb7556;color:#ffffff;padding:12px 18px;border-radius:5px;font-weight:700;text-decoration:none;">Confirm my email</a>
-    </p>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+      <tr>
+        <td bgcolor="#eb7556" style="border-radius:5px;">
+          <a href="${safeConfirmationLink}" style="display:inline-block;padding:12px 18px;color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;line-height:20px;text-decoration:none;">Confirm my email</a>
+        </td>
+      </tr>
+    </table>
     <p>This link expires in 24 hours.</p>
     <p>If the button does not work, copy and paste this link into your browser:<br><a href="${safeConfirmationLink}">${safeConfirmationLink}</a></p>
   </body>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Header from "../../../../components/Header";
+import PageLoader from "../../../../components/PageLoader";
 
 type Form = {
   title: string;
@@ -101,6 +102,7 @@ export default function EditRoom() {
     }
   }
 
+  if (!form && !error) return <><Header /><PageLoader label="Loading listing…" /></>;
   return <><Header /><main className="page"><p className="eyebrow">LANDLORD LISTING</p><h1>Edit room</h1>
     {error && !form ? <div className="notice">{error}</div> : form && <form className="panel form listing-form" onSubmit={submit}>
       <input required minLength={5} placeholder="Listing title" value={form.title} onChange={(e) => update("title", e.target.value)} />

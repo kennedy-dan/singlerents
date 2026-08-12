@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "../components/Header";
+import PageLoader from "../components/PageLoader";
 
 function getNotificationLink(type: string) {
   switch (type) {
@@ -16,17 +17,20 @@ function getNotificationLink(type: string) {
 
 export default function Notifications() {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/notifications")
       .then((r) => (r.ok ? r.json() : null))
-      .then((v) => setItems(v?.notifications || []));
+      .then((v) => setItems(v?.notifications || []))
+      .finally(() => setLoading(false));
     fetch("/api/notifications", { method: "PATCH" });
   }, []);
 
   return (
     <>
       <Header />
+      {loading ? <PageLoader label="Loading notifications…" /> :
       <main className="page">
         <p className="eyebrow">ACTIVITY</p>
         <h1>Notifications</h1>
@@ -44,6 +48,7 @@ export default function Notifications() {
           {!items.length && <p className="muted">You are all caught up.</p>}
         </section>
       </main>
+      }
     </>
   );
 }

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
+import PageLoader from "../../../components/PageLoader";
 
 export default function NewRoom() {
   const router = useRouter();
@@ -18,15 +19,15 @@ export default function NewRoom() {
   const [subscription, setSubscription] = useState(null),
     [error, setError] = useState(""),
     [uploading, setUploading] = useState(false),
-    [blockDate, setBlockDate] = useState("");
+    [blockDate, setBlockDate] = useState(""),
+    [loading, setLoading] = useState(true);
   useEffect(() => {
     fetch("/api/subscriptions")
       .then((r) => (r.ok ? r.json() : null))
       .then((v) =>
         setSubscription(
           v?.subscriptions?.find((s) => s.status === "SUCCESS") || null,
-        ),
-      );
+      )).finally(() => setLoading(false));
   }, []);
   const update = (key, value) => setForm({ ...form, [key]: value });
   async function upload(event) {
@@ -95,6 +96,7 @@ async function submit(e) {
   }
 }
   const paid = !!subscription;
+  if (loading) return <><Header /><PageLoader label="Preparing your listing…" /></>;
   return (
     <>
       <Header />

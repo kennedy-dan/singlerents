@@ -70,5 +70,5 @@ export default function Map({ listings = [], onSelect }) {
     }
     return () => { cancelled = true; map.current?.remove(); map.current = null; };
   }, [listings, onSelect]);
-  return error ? <div className="map"><b>{error}</b></div> : <div ref={element} className="map mapbox-map" />;
+  return error ? <div className="map" style={{ height: "min(500px, 70vh)" }}><b>{error}</b></div> : <div ref={element} className="map mapbox-map" style={{ height: "min(500px, 70vh)" }} />;
 }
