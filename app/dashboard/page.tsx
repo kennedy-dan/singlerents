@@ -15,7 +15,11 @@ export default function Dashboard() {
     [banks, setBanks] = useState<any[]>([]),
     [banksError, setBanksError] = useState(""),
     [banksLoading, setBanksLoading] = useState(false),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [bookingToConfirm, setBookingToConfirm] = useState<any>(null),
+    [leaseAmount, setLeaseAmount] = useState(""),
+    [confirmingRent, setConfirmingRent] = useState(false),
+    [rentError, setRentError] = useState("");
   const load = async () => {
     const r = await Promise.all(
       [
@@ -75,23 +79,34 @@ export default function Dashboard() {
       ? location.assign(v.authorizationUrl)
       : setNotice(v.error || "Unable to begin payment.");
   };
-  const confirm = async (b: any) => {
-    const value = prompt(
-      "Agreed rent in naira",
-      b.leaseAmount || b.listing.price,
-    );
-    if (!value) return;
-    const r = await fetch(`/api/bookings/${b.id}/match`, {
+  const openConfirmRent = (booking: any) => {
+    setBookingToConfirm(booking);
+    setLeaseAmount(String(booking.leaseAmount || booking.listing.price));
+    setRentError("");
+  };
+  const confirm = async () => {
+    const amount = Number(leaseAmount.replace(/,/g, ""));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setRentError("Enter a valid rent amount greater than ₦0.");
+      return;
+    }
+    if (!bookingToConfirm) return;
+    setConfirmingRent(true);
+    const r = await fetch(`/api/bookings/${bookingToConfirm.id}/match`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leaseAmount: Number(value) }),
+      body: JSON.stringify({ leaseAmount: amount }),
     });
     setNotice(
       r.ok
         ? "Rent confirmed. The tenant can now pay."
         : "Could not confirm the rent.",
     );
-    if (r.ok) load();
+    setConfirmingRent(false);
+    if (r.ok) {
+      setBookingToConfirm(null);
+      load();
+    }
   };
   const connect = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -212,9 +227,25 @@ export default function Dashboard() {
           )}
         </section>
         <h2>Tenant requests</h2>
-        <Bookings bookings={bookings} confirm={confirm} />
+        <Bookings bookings={bookings} confirm={openConfirmRent} />
         {notice && <div className="notice">{notice}</div>}
       </main>
+      {bookingToConfirm && (
+        <div className="modal-bg" role="presentation" onMouseDown={() => !confirmingRent && setBookingToConfirm(null)}>
+          <section className="modal rent-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-rent-title" onMouseDown={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" aria-label="Close" onClick={() => setBookingToConfirm(null)} disabled={confirmingRent}>×</button>
+            <p className="eyebrow">CONFIRM TENANT REQUEST</p>
+            <h2 id="confirm-rent-title">Set the agreed monthly rent</h2>
+            <p className="muted"><b>{bookingToConfirm.listing.title}</b><br />Confirming this amount lets the tenant continue to Paystack payment.</p>
+            <form className="form" onSubmit={(event) => { event.preventDefault(); confirm(); }}>
+              <label>Monthly rent (₦)<input autoFocus inputMode="numeric" value={leaseAmount} onChange={(event) => setLeaseAmount(event.target.value)} placeholder="e.g. 250000" disabled={confirmingRent} /></label>
+              <div className="rent-summary"><span>Tenant pays</span><b>{rent(Number(leaseAmount.replace(/,/g, "")) || 0)}</b><small>You receive 97% after the platform fee.</small></div>
+              {rentError && <span className="error">{rentError}</span>}
+              <div className="modal-actions"><button type="button" className="link" onClick={() => setBookingToConfirm(null)} disabled={confirmingRent}>Cancel</button><button className="button" disabled={confirmingRent}>{confirmingRent ? "Confirming…" : "Confirm rent"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
     </>
   );
 }
@@ -227,7 +258,7 @@ function Bookings({
   bookings: any[];
   tenant?: boolean;
   pay?: (booking: any) => Promise<void>;
-  confirm?: (booking: any) => Promise<void>;
+  confirm?: (booking: any) => void | Promise<void>;
 }) {
   return (
     <section className="panel">
