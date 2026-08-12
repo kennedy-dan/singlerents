@@ -1,0 +1,7 @@
+'use client';
+import { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import Header from '../../components/Header';
+function Result(){const params=useSearchParams(),reference=params.get('reference')||params.get('trxref'),[state,setState]=useState('VERIFYING');useEffect(()=>{if(!reference){setState('MISSING');return}fetch(`/api/payments/verify?reference=${encodeURIComponent(reference)}`).then(r=>r.ok?r.json():null).then(v=>setState(v?.status||'PENDING')).catch(()=>setState('PENDING'))},[reference]);const success=state==='SUCCESS';return <main className="auth"><section className="panel"><p className="eyebrow">PAYMENT STATUS</p><h1>{success?'Payment confirmed':'Verifying payment…'}</h1>{success?<><p>Your payment was confirmed and your access has been updated.</p><Link className="button" href="/dashboard">Go to dashboard</Link></>:state==='MISSING'?<p className="error">No Paystack payment reference was returned.</p>:<><p className="muted">Paystack is confirming this transaction. Refresh this page in a few seconds if needed.</p><button className="button" onClick={()=>location.reload()}>Check again</button></>}</section></main>}
+export default function PaymentComplete(){return <><Header/><Suspense fallback={<main className="auth"><section className="panel">Verifying payment…</section></main>}><Result/></Suspense></>}

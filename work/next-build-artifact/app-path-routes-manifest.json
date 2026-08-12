@@ -1,0 +1,16 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/auth/me/route": "/api/auth/me",
+  "/api/bookings/route": "/api/bookings",
+  "/api/listings/route": "/api/listings",
+  "/api/messages/route": "/api/messages",
+  "/api/reviews/route": "/api/reviews",
+  "/api/subscriptions/route": "/api/subscriptions",
+  "/api/payments/webhook/route": "/api/payments/webhook",
+  "/api/payments/initialize/route": "/api/payments/initialize",
+  "/login/page": "/login",
+  "/page": "/",
+  "/register/page": "/register"
+}
