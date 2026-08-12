@@ -54,7 +54,10 @@ export default function Register() {
         </select>
         {error && <span className="error">{error}</span>}
         {confirmationSent ? (
-          <p className="muted">We sent a confirmation link to <strong>{x.email}</strong>. Open it to activate your account.</p>
+          <p className="muted">
+            We sent a confirmation link to <strong>{x.email}</strong>. Open it
+            to activate your account.
+          </p>
         ) : (
           <>
             <button className="button">Create account</button>

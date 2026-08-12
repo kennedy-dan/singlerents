@@ -30,25 +30,31 @@ export default function Notifications() {
   return (
     <>
       <Header />
-      {loading ? <PageLoader label="Loading notifications…" /> :
-      <main className="page">
-        <p className="eyebrow">ACTIVITY</p>
-        <h1>Notifications</h1>
-        <section className="panel">
-          {items.map((n) => (
-            <Link href={getNotificationLink(n.type)} className="listing" key={n.id}>
-              <div>
-                <b>{n.type.replace("_", " ")}</b>
-                <small>
-                  {n.body} · {new Date(n.createdAt).toLocaleString()}
-                </small>
-              </div>
-            </Link>
-          ))}
-          {!items.length && <p className="muted">You are all caught up.</p>}
-        </section>
-      </main>
-      }
+      {loading ? (
+        <PageLoader label="Loading notifications…" />
+      ) : (
+        <main className="page">
+          <p className="eyebrow">ACTIVITY</p>
+          <h1>Notifications</h1>
+          <section className="panel">
+            {items.map((n) => (
+              <Link
+                href={getNotificationLink(n.type)}
+                className="listing"
+                key={n.id}
+              >
+                <div>
+                  <b>{n.type.replace("_", " ")}</b>
+                  <small>
+                    {n.body} · {new Date(n.createdAt).toLocaleString()}
+                  </small>
+                </div>
+              </Link>
+            ))}
+            {!items.length && <p className="muted">You are all caught up.</p>}
+          </section>
+        </main>
+      )}
     </>
   );
 }

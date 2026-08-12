@@ -18,8 +18,8 @@ export default function Profile() {
       })
       .finally(() => setLoading(false));
   useEffect(() => {
-  load();
-}, []);
+    load();
+  }, []);
   async function save(e) {
     e.preventDefault();
     const r = await fetch("/api/profile", {
@@ -31,7 +31,12 @@ export default function Profile() {
     if (r.ok) load();
   }
   if (loading)
-    return <><Header /><PageLoader label="Loading profile…" /></>;
+    return (
+      <>
+        <Header />
+        <PageLoader label="Loading profile…" />
+      </>
+    );
   if (!profile)
     return (
       <>

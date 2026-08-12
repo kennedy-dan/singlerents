@@ -27,7 +27,9 @@ export default function NewRoom() {
       .then((v) =>
         setSubscription(
           v?.subscriptions?.find((s) => s.status === "SUCCESS") || null,
-      )).finally(() => setLoading(false));
+        ),
+      )
+      .finally(() => setLoading(false));
   }, []);
   const update = (key, value) => setForm({ ...form, [key]: value });
   async function upload(event) {
@@ -65,38 +67,44 @@ export default function NewRoom() {
       event.target.value = "";
     }
   }
-async function submit(e) {
-  e.preventDefault();
+  async function submit(e) {
+    e.preventDefault();
 
-  if (form.description.trim().length < 20) {
-    setError("Description must be at least 20 characters long.");
-    return;
-  }
+    if (form.description.trim().length < 20) {
+      setError("Description must be at least 20 characters long.");
+      return;
+    }
 
-  const data = {
-    ...form,
-    price: Number(form.price),
-    amenities: form.amenities
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean),
-    availability: { blockedDates: form.blockedDates },
-  };
-  const res = await fetch("/api/listings", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (res.ok) router.push("/dashboard");
-  else {
-    const result = await res.json();
-    result.redirectTo
-      ? router.push(result.redirectTo)
-      : setError(result.error || "Unable to publish room");
+    const data = {
+      ...form,
+      price: Number(form.price),
+      amenities: form.amenities
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean),
+      availability: { blockedDates: form.blockedDates },
+    };
+    const res = await fetch("/api/listings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) router.push("/dashboard");
+    else {
+      const result = await res.json();
+      result.redirectTo
+        ? router.push(result.redirectTo)
+        : setError(result.error || "Unable to publish room");
+    }
   }
-}
   const paid = !!subscription;
-  if (loading) return <><Header /><PageLoader label="Preparing your listing…" /></>;
+  if (loading)
+    return (
+      <>
+        <Header />
+        <PageLoader label="Preparing your listing…" />
+      </>
+    );
   return (
     <>
       <Header />
@@ -144,7 +152,10 @@ async function submit(e) {
             value={form.location}
             onChange={(e) => update("location", e.target.value)}
           />
-          <small className="muted">Include the house number, street, area, and city so tenants can find it on the map.</small>
+          <small className="muted">
+            Include the house number, street, area, and city so tenants can find
+            it on the map.
+          </small>
           <select
             value={form.type}
             onChange={(e) => update("type", e.target.value)}
@@ -169,70 +180,70 @@ async function submit(e) {
             />
           </label>
           {uploading && <small className="muted">Uploading images…</small>}
-       {form.photos.length > 0 && (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-      gap: "12px",
-      marginTop: "8px",
-    }}
-  >
-    {form.photos.map((photo) => (
-      <div
-        key={photo}
-        style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "1 / 1",
-          borderRadius: "8px",
-          overflow: "hidden",
-        }}
-      >
-        <img
-          src={photo}
-          alt="Room photo"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-          }}
-        />
-        <button
-          type="button"
-          onClick={() =>
-            update(
-              "photos",
-              form.photos.filter((item) => item !== photo),
-            )
-          }
-          aria-label="Remove photo"
-          style={{
-            position: "absolute",
-            top: "6px",
-            right: "6px",
-            width: "22px",
-            height: "22px",
-            borderRadius: "50%",
-            border: "none",
-            background: "rgba(0, 0, 0, 0.6)",
-            color: "#fff",
-            fontSize: "14px",
-            lineHeight: "1",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-          }}
-        >
-          ×
-        </button>
-      </div>
-    ))}
-  </div>
-)}
+          {form.photos.length > 0 && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                gap: "12px",
+                marginTop: "8px",
+              }}
+            >
+              {form.photos.map((photo) => (
+                <div
+                  key={photo}
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    aspectRatio: "1 / 1",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={photo}
+                    alt="Room photo"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update(
+                        "photos",
+                        form.photos.filter((item) => item !== photo),
+                      )
+                    }
+                    aria-label="Remove photo"
+                    style={{
+                      position: "absolute",
+                      top: "6px",
+                      right: "6px",
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "50%",
+                      border: "none",
+                      background: "rgba(0, 0, 0, 0.6)",
+                      color: "#fff",
+                      fontSize: "14px",
+                      lineHeight: "1",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <label>
             Blocked availability dates
             <div className="button-row">

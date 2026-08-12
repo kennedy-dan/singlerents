@@ -2,7 +2,10 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "../../../../lib/db";
 import { bad } from "../../../../lib/http";
-import { createEmailVerificationToken, sendVerificationEmail } from "../../../../lib/email-verification";
+import {
+  createEmailVerificationToken,
+  sendVerificationEmail,
+} from "../../../../lib/email-verification";
 import { NextResponse } from "next/server";
 
 const schema = z.object({
@@ -17,7 +20,8 @@ export async function POST(req) {
   try {
     const input = schema.parse(await req.json());
     const email = input.email.toLowerCase();
-    if (await db.user.findUnique({ where: { email } })) return bad("Email already registered");
+    if (await db.user.findUnique({ where: { email } }))
+      return bad("Email already registered");
 
     const user = await db.user.create({
       data: {
@@ -30,14 +34,27 @@ export async function POST(req) {
     });
     try {
       const token = await createEmailVerificationToken(user.id);
-      await sendVerificationEmail({ email: user.email, name: user.name, token, origin: new URL(req.url).origin });
+      await sendVerificationEmail({
+        email: user.email,
+        name: user.name,
+        token,
+        origin: new URL(req.url).origin,
+      });
     } catch (error) {
       await db.user.delete({ where: { id: user.id } });
       console.error("Failed to send verification email:", error);
-      return NextResponse.json({ error: "We could not send the confirmation email. Please try again." }, { status: 503 });
+      return NextResponse.json(
+        {
+          error: "We could not send the confirmation email. Please try again.",
+        },
+        { status: 503 },
+      );
     }
 
-    return NextResponse.json({ message: "Check your email to confirm your account." }, { status: 201 });
+    return NextResponse.json(
+      { message: "Check your email to confirm your account." },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Registration error:", error);
     return bad("Invalid registration details");

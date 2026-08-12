@@ -137,7 +137,9 @@ export default function Home() {
       <section className="section" id="rooms">
         <p className="eyebrow">LIVE LISTINGS</p>
         <h2>Rooms posted by landlords</h2>
-        <p className="muted">{loading ? "Loading rooms…" : `${rooms.length} rooms available`}</p>
+        <p className="muted">
+          {loading ? "Loading rooms…" : `${rooms.length} rooms available`}
+        </p>
         <div className="grid">
           {rooms.map((r) => (
             <article className="card" key={r.id}>
@@ -226,7 +228,7 @@ function Room({ room, close, notify }) {
     );
   }
   async function sendReview() {
-        if (review.trim().length < 4) {
+    if (review.trim().length < 4) {
       notify("Review must be at least 4 characters.");
       return;
     }

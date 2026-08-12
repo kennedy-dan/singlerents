@@ -57,7 +57,13 @@ export default function Dashboard() {
       active = false;
     };
   }, [user]);
-  if (loading) return <><Header /><PageLoader label="Loading dashboard…" /></>;
+  if (loading)
+    return (
+      <>
+        <Header />
+        <PageLoader label="Loading dashboard…" />
+      </>
+    );
   const pay = async (b: any) => {
     const r = await fetch("/api/payments/initialize", {
         method: "POST",
@@ -212,7 +218,17 @@ export default function Dashboard() {
     </>
   );
 }
-function Bookings({ bookings, tenant = false, pay, confirm }: { bookings: any[]; tenant?: boolean; pay?: (booking: any) => Promise<void>; confirm?: (booking: any) => Promise<void> }) {
+function Bookings({
+  bookings,
+  tenant = false,
+  pay,
+  confirm,
+}: {
+  bookings: any[];
+  tenant?: boolean;
+  pay?: (booking: any) => Promise<void>;
+  confirm?: (booking: any) => Promise<void>;
+}) {
   return (
     <section className="panel">
       {bookings.map((b) => (

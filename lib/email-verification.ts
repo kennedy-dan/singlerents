@@ -30,7 +30,17 @@ export function applicationUrl(requestOrigin?: string) {
   throw new Error("APP_URL is required to send verification emails.");
 }
 
-export async function sendVerificationEmail({ email, name, token, origin }: { email: string; name: string; token: string; origin?: string }) {
+export async function sendVerificationEmail({
+  email,
+  name,
+  token,
+  origin,
+}: {
+  email: string;
+  name: string;
+  token: string;
+  origin?: string;
+}) {
   const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!apiKey || !from) {
@@ -81,9 +91,9 @@ export async function sendVerificationEmail({ email, name, token, origin }: { em
     }),
   });
 
-  if (!response.ok) throw new Error("Unable to send verification email through SendGrid");
+  if (!response.ok)
+    throw new Error("Unable to send verification email through SendGrid");
 }
-
 
 export async function verifyEmailToken(token) {
   const record = await db.emailVerificationToken.findUnique({
@@ -91,17 +101,33 @@ export async function verifyEmailToken(token) {
     include: { user: true },
   });
   if (!record || record.expiresAt <= new Date()) {
-    if (record) await db.emailVerificationToken.delete({ where: { id: record.id } });
+    if (record)
+      await db.emailVerificationToken.delete({ where: { id: record.id } });
     return null;
   }
   const user = await db.$transaction(async (tx) => {
-    const verified = await tx.user.update({ where: { id: record.userId }, data: { emailVerifiedAt: new Date() } });
-    await tx.emailVerificationToken.deleteMany({ where: { userId: record.userId } });
+    const verified = await tx.user.update({
+      where: { id: record.userId },
+      data: { emailVerifiedAt: new Date() },
+    });
+    await tx.emailVerificationToken.deleteMany({
+      where: { userId: record.userId },
+    });
     return verified;
   });
   return user;
 }
 
 function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
+  return value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      })[char],
+  );
 }

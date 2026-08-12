@@ -16,7 +16,9 @@ const schema = z.object({
   type: z.string().min(2),
   amenities: z.array(z.string()).default([]),
   photos: z.array(z.string().url()).min(1),
-  availability: z.object({ blockedDates: z.array(z.string().date()).default([]) }).default({ blockedDates: [] }),
+  availability: z
+    .object({ blockedDates: z.array(z.string().date()).default([]) })
+    .default({ blockedDates: [] }),
 });
 const include = {
   landlord: {
@@ -89,16 +91,26 @@ export async function POST(req) {
           trialEndsAt,
         },
       });
-      void sendEmail({ to: user.email, subject: "Your SingleRents listing is live", text: `Your listing \"${listing.title}\" is now live until ${trialEndsAt.toLocaleDateString()}.`, html: `${emailParagraph(`Your listing \"${listing.title}\" is now live.`)}${emailParagraph(`It is available until ${trialEndsAt.toLocaleDateString()}.`)}` });
+      void sendEmail({
+        to: user.email,
+        subject: "Your SingleRents listing is live",
+        text: `Your listing \"${listing.title}\" is now live until ${trialEndsAt.toLocaleDateString()}.`,
+        html: `${emailParagraph(`Your listing \"${listing.title}\" is now live.`)}${emailParagraph(`It is available until ${trialEndsAt.toLocaleDateString()}.`)}`,
+      });
       return NextResponse.json({ listing, trialEndsAt }, { status: 201 });
     }
     const listing = await db.listing.create({
       data: { ...data, landlordId: user.sub, status: "PUBLISHED" },
     });
-    void sendEmail({ to: user.email, subject: "Your SingleRents listing is live", text: `Your listing \"${listing.title}\" is now live.`, html: emailParagraph(`Your listing \"${listing.title}\" is now live.`) });
+    void sendEmail({
+      to: user.email,
+      subject: "Your SingleRents listing is live",
+      text: `Your listing \"${listing.title}\" is now live.`,
+      html: emailParagraph(`Your listing \"${listing.title}\" is now live.`),
+    });
     return NextResponse.json({ listing }, { status: 201 });
   } catch (e) {
-    console.error("Listing creation error:", e);    
+    console.error("Listing creation error:", e);
     return bad(
       e.message === "UNAUTHORIZED"
         ? "Sign in required"

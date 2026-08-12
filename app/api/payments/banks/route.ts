@@ -7,10 +7,13 @@ export async function GET() {
     const user = await requireUser();
     if (user.role !== "LANDLORD") return unauthorized();
 
-    const response = await fetch("https://api.paystack.co/bank?country=nigeria", {
-      headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
-      cache: "no-store",
-    });
+    const response = await fetch(
+      "https://api.paystack.co/bank?country=nigeria",
+      {
+        headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+        cache: "no-store",
+      },
+    );
     const result = await response.json();
 
     if (!response.ok || !result.status) {

@@ -9,15 +9,18 @@ const EVENT_CHANNEL = "singlerents:realtime";
 // In development, share this fallback through the one local Node.js process so
 // an API route can notify a socket created by server.ts. Production never uses
 // this registry for cross-instance delivery: it requires Redis instead.
-const localListeners = process.env.NODE_ENV === "production"
-  ? new Map<string, Set<EventListener>>()
-  : (() => {
-      const localProcess = globalThis as typeof globalThis & {
-        __singlerentsLocalEventListeners?: Map<string, Set<EventListener>>;
-      };
-      return localProcess.__singlerentsLocalEventListeners ??=
-        new Map<string, Set<EventListener>>();
-    })();
+const localListeners =
+  process.env.NODE_ENV === "production"
+    ? new Map<string, Set<EventListener>>()
+    : (() => {
+        const localProcess = globalThis as typeof globalThis & {
+          __singlerentsLocalEventListeners?: Map<string, Set<EventListener>>;
+        };
+        return (localProcess.__singlerentsLocalEventListeners ??= new Map<
+          string,
+          Set<EventListener>
+        >());
+      })();
 let publisher: Redis | undefined;
 let subscriber: Redis | undefined;
 let subscriberReady: Promise<void> | undefined;
@@ -35,7 +38,9 @@ function hasRedis() {
 function getPublisher() {
   if (!publisher) {
     publisher = new Redis(redisUrl(), { maxRetriesPerRequest: null });
-    publisher.on("error", (error) => console.error("Realtime Redis publisher error:", error));
+    publisher.on("error", (error) =>
+      console.error("Realtime Redis publisher error:", error),
+    );
   }
   return publisher;
 }
@@ -54,7 +59,9 @@ async function ensureSubscriber() {
   if (subscriberReady) return subscriberReady;
   subscriberReady = (async () => {
     subscriber = new Redis(redisUrl(), { maxRetriesPerRequest: null });
-    subscriber.on("error", (error) => console.error("Realtime Redis subscriber error:", error));
+    subscriber.on("error", (error) =>
+      console.error("Realtime Redis subscriber error:", error),
+    );
     subscriber.on("message", (channel, body) => {
       if (channel !== EVENT_CHANNEL) return;
       try {
@@ -100,5 +107,8 @@ export async function publish(userId: string, event: string, payload: unknown) {
     dispatch({ userId, event, payload });
     return;
   }
-  await getPublisher().publish(EVENT_CHANNEL, JSON.stringify({ userId, event, payload }));
+  await getPublisher().publish(
+    EVENT_CHANNEL,
+    JSON.stringify({ userId, event, payload }),
+  );
 }

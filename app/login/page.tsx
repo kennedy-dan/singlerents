@@ -48,13 +48,23 @@ export default function Login() {
           onChange={(e) => setX({ ...x, password: e.target.value })}
         />
         {error && <span className="error">{error}</span>}
-        {needsConfirmation && <button type="button" className="google-button" onClick={resendConfirmation}>Resend confirmation email</button>}
+        {needsConfirmation && (
+          <button
+            type="button"
+            className="google-button"
+            onClick={resendConfirmation}
+          >
+            Resend confirmation email
+          </button>
+        )}
         {resendMessage && <span className="muted">{resendMessage}</span>}
         <button className="button">Log in</button>
         <p className="muted">
           No account? <a href="/register">Join free</a>
         </p>
-        <a className="google-button" href="/api/auth/google">Continue with Google</a>
+        <a className="google-button" href="/api/auth/google">
+          Continue with Google
+        </a>
       </form>
     </main>
   );

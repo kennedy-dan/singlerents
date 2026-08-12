@@ -72,18 +72,21 @@ export async function POST(req) {
         });
     }
     if (!conversation) return unauthorized();
- const message = await db.message.create({
-  data: {
-    conversationId: conversation.id,
-    senderId: u.sub,
-    body,
-  },
-});
+    const message = await db.message.create({
+      data: {
+        conversationId: conversation.id,
+        senderId: u.sub,
+        body,
+      },
+    });
     const recipient =
       conversation.tenantId === u.sub
         ? conversation.landlordId
         : conversation.tenantId;
-    const recipientUser = await db.user.findUnique({ where: { id: recipient }, select: { email: true } });
+    const recipientUser = await db.user.findUnique({
+      where: { id: recipient },
+      select: { email: true },
+    });
     await db.notification.create({
       data: {
         userId: recipient,
@@ -92,12 +95,24 @@ export async function POST(req) {
       },
     });
     const { publish } = await import("../../../lib/events");
-    void publish(recipient, "message", { message, conversationId: conversation.id }).catch((error) => console.error("Unable to publish message event:", error));
+    void publish(recipient, "message", {
+      message,
+      conversationId: conversation.id,
+    }).catch((error) =>
+      console.error("Unable to publish message event:", error),
+    );
     void publish(recipient, "notification", {
       type: "MESSAGE",
       body: "You have a new message.",
-    }).catch((error) => console.error("Unable to publish notification event:", error));
-    void sendEmail({ to: recipientUser?.email, subject: "You have a new SingleRents message", text: `${u.email} sent you a message: ${body}`, html: `${emailParagraph("You have a new message on SingleRents.")}${emailParagraph(body)}` });
+    }).catch((error) =>
+      console.error("Unable to publish notification event:", error),
+    );
+    void sendEmail({
+      to: recipientUser?.email,
+      subject: "You have a new SingleRents message",
+      text: `${u.email} sent you a message: ${body}`,
+      html: `${emailParagraph("You have a new message on SingleRents.")}${emailParagraph(body)}`,
+    });
     return NextResponse.json(
       { message, conversationId: conversation.id },
       { status: 201 },

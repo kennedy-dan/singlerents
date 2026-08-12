@@ -83,7 +83,9 @@ export async function POST(req) {
     if (booking.status !== "CONFIRMED")
       return bad("The landlord must confirm this tenancy before payment.");
     if (!booking.listing.landlord.paystackSubaccountCode)
-      return bad("This landlord has not completed their Paystack payout setup yet.");
+      return bad(
+        "This landlord has not completed their Paystack payout setup yet.",
+      );
     const existingPayment = await db.payment.findUnique({
       where: { bookingId: booking.id },
       select: { status: true },
@@ -91,7 +93,9 @@ export async function POST(req) {
     if (existingPayment?.status === "SUCCESS")
       return bad("This rent has already been paid.");
     if (existingPayment)
-      return bad("A payment is already awaiting confirmation. Check your payment status before trying again.");
+      return bad(
+        "A payment is already awaiting confirmation. Check your payment status before trying again.",
+      );
     const rentNaira = booking.leaseAmount || booking.listing.price;
     const amount = rentNaira * 100;
     const agencyFee = Math.round(amount * 0.03);
@@ -114,7 +118,12 @@ export async function POST(req) {
       currency: "NGN",
       reference,
       callback_url: callbackUrl,
-      metadata: { kind: input.kind, bookingId: booking.id, agencyFee, landlordShare: amount - agencyFee },
+      metadata: {
+        kind: input.kind,
+        bookingId: booking.id,
+        agencyFee,
+        landlordShare: amount - agencyFee,
+      },
     };
     payload.subaccount = booking.listing.landlord.paystackSubaccountCode;
     payload.transaction_charge = agencyFee;

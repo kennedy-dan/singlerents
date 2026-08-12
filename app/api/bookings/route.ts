@@ -16,7 +16,15 @@ export async function GET() {
       include: {
         listing: true,
         tenant: { select: { name: true, email: true } },
-        payment: { select: { id: true, status: true, amount: true, agencyFee: true, reference: true } },
+        payment: {
+          select: {
+            id: true,
+            status: true,
+            amount: true,
+            agencyFee: true,
+            reference: true,
+          },
+        },
       },
       orderBy: { startAt: "asc" },
     });
@@ -37,9 +45,14 @@ export async function POST(req) {
         note: z.string().max(500).optional(),
       })
       .parse(await req.json());
-    const listing = await db.listing.findUnique({ where: { id: x.listingId }, include: { landlord: { select: { email: true, name: true } } } });
-    if (!listing || listing.status !== "PUBLISHED") return bad("Listing is not available");
-    if (!isDateRangeAvailable(listing.availability, x.startAt, x.endAt)) return bad("Those dates are blocked by the landlord");
+    const listing = await db.listing.findUnique({
+      where: { id: x.listingId },
+      include: { landlord: { select: { email: true, name: true } } },
+    });
+    if (!listing || listing.status !== "PUBLISHED")
+      return bad("Listing is not available");
+    if (!isDateRangeAvailable(listing.availability, x.startAt, x.endAt))
+      return bad("Those dates are blocked by the landlord");
     const clash = await db.booking.findFirst({
       where: {
         listingId: x.listingId,
@@ -65,9 +78,21 @@ export async function POST(req) {
         body: "You have a new viewing request.",
       },
     });
-    const { publish } = await import('../../../lib/events');
-    void publish(booking.listing.landlordId, 'notification', { type: 'BOOKING_REQUEST', body: 'You have a new viewing request.' }).catch((error) => console.error("Unable to publish booking notification:", error));
-    void sendEmail({ to: listing.landlord.email, subject: "New SingleRents viewing request", text: `A tenant has requested a viewing for ${listing.title}.`, html: emailParagraph(`A tenant has requested a viewing for ${listing.title}.`) });
+    const { publish } = await import("../../../lib/events");
+    void publish(booking.listing.landlordId, "notification", {
+      type: "BOOKING_REQUEST",
+      body: "You have a new viewing request.",
+    }).catch((error) =>
+      console.error("Unable to publish booking notification:", error),
+    );
+    void sendEmail({
+      to: listing.landlord.email,
+      subject: "New SingleRents viewing request",
+      text: `A tenant has requested a viewing for ${listing.title}.`,
+      html: emailParagraph(
+        `A tenant has requested a viewing for ${listing.title}.`,
+      ),
+    });
     return NextResponse.json({ booking }, { status: 201 });
   } catch (e) {
     console.error("Booking request error:", e);

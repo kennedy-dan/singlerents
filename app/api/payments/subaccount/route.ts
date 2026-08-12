@@ -6,7 +6,9 @@ import { NextResponse } from "next/server";
 
 const inputSchema = z.object({
   businessName: z.string().min(2).max(100),
-  accountNumber: z.string().regex(/^\d{10}$/, "Enter a valid 10-digit Nigerian account number."),
+  accountNumber: z
+    .string()
+    .regex(/^\d{10}$/, "Enter a valid 10-digit Nigerian account number."),
   bankCode: z.string().min(2).max(10),
 });
 
@@ -31,7 +33,8 @@ export async function POST(req) {
       }),
     });
     const result = await response.json();
-    if (!response.ok || !result.status) return bad(result.message || "Unable to set up your payout account.");
+    if (!response.ok || !result.status)
+      return bad(result.message || "Unable to set up your payout account.");
     await db.user.update({
       where: { id: user.sub },
       data: { paystackSubaccountCode: result.data.subaccount_code },
@@ -39,6 +42,8 @@ export async function POST(req) {
     return NextResponse.json({ subaccountCode: result.data.subaccount_code });
   } catch (error) {
     if (error.message === "UNAUTHORIZED") return unauthorized();
-    return bad(error.issues?.[0]?.message || "Unable to set up your payout account.");
+    return bad(
+      error.issues?.[0]?.message || "Unable to set up your payout account.",
+    );
   }
 }

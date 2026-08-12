@@ -26,7 +26,9 @@ export async function POST(req) {
       },
     });
     if (!paidRental)
-      return bad("Reviews are available after your rental payment is successful.");
+      return bad(
+        "Reviews are available after your rental payment is successful.",
+      );
     const prior = await db.review.findFirst({
       where: { listingId: input.listingId, authorId: user.sub },
     });
