@@ -50,6 +50,7 @@ model User {
   avatarUrl String?
   emailVerifiedAt DateTime?
   phoneVerifiedAt DateTime?
+  isActive Boolean @default(true)
   createdAt DateTime @default(now())
   listings Listing[]
   bookings Booking[]

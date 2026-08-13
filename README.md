@@ -8,7 +8,7 @@ The product supports the MVP journey from discovery to contact and payment: tena
 
 | Area | Included implementation |
 | --- | --- |
-| Accounts | Email/password registration and login, Google sign-in, email verification, JWT-backed HTTP-only session cookie, and tenant/landlord roles. |
+| Accounts | Email/password registration and login, Google sign-in, branded email verification, JWT-backed HTTP-only session cookie, account activation, and tenant/landlord/admin roles. |
 | Listings | Landlord room creation and management, photos, amenities, location, price, availability, trial dates, and publication status. |
 | Search | Home-page room browsing with search/filter controls and an interactive Mapbox map. |
 | Profiles | Editable personal details and payment-related profile data. |
@@ -16,6 +16,7 @@ The product supports the MVP journey from discovery to contact and payment: tena
 | Bookings | Viewing/rental requests, availability validation, booking states, and landlord matching. |
 | Trust | Listing reviews and ratings, plus email-verification support. |
 | Notifications | In-app notifications with unread counts and live updates. |
+| Administration | Protected platform console for monitoring users, listings, bookings, payments, subscriptions, and platform fees; admins can manage account activation, roles, and listing status. |
 | Monetization | Listing trials, landlord subscriptions, Paystack payment initialization/verification/webhooks, and a 3% agency-fee field on rental payments. |
 | Responsive UI | Mobile navigation menu plus layouts that adapt to tablet and phone widths. |
 
@@ -27,6 +28,16 @@ The product supports the MVP journey from discovery to contact and payment: tena
 - **Authentication:** bcrypt password hashing, JOSE JWTs, Google OAuth
 - **Realtime:** Vercel WebSockets backed by Upstash Redis pub/sub
 - **Integrations:** Paystack, Mapbox, Cloudinary, SendGrid
+
+## Email delivery
+
+SingleRents sends responsive, SingleRents-branded verification and notification emails, including the `⌂ singlerents` wordmark, a clear call to action, and a fallback link.
+
+- Set `APP_URL` to the canonical public HTTPS origin (for example, `https://your-domain.com`) so verification links always open the live app.
+- Verify `EMAIL_FROM` or authenticate its sending domain in SendGrid. SPF, DKIM, and DMARC improve delivery and reduce spam placement.
+- New/unverified senders can land in Spam, Junk, or Promotions. Check SendGrid's Activity Feed and the recipient's spam folders while testing.
+- Verification links expire after 24 hours. Resending a verification email invalidates the preceding link.
+- `localhost` links work only on the computer running the local server. Use a deployed URL or a secure tunnel for cross-device email testing.
 
 ## Local setup
 
@@ -108,6 +119,7 @@ app/
   api/              API routes for auth, listings, bookings, payments and more
   components/       Shared UI, including the header and Mapbox map
   dashboard/        Landlord dashboard, billing and room-management screens
+  admin/            Protected platform-administration console
   messages/         Tenant-landlord messaging screen
   profile/          Profile-management screen
 lib/                Authentication, database, email, event and business helpers
@@ -125,11 +137,25 @@ vercel.json         Vercel WebSocket rewrite, Fluid Compute, and production buil
 5. The landlord manages the request in the dashboard; relevant users receive in-app updates.
 6. Paystack handles eligible listing, subscription, and rental-payment flows; completed rental payments retain the agency-fee amount.
 
+## Administration
+
+The `/admin` page is accessible only to active users whose database role is `ADMIN`. It provides platform metrics and controls for user accounts and listings:
+
+- View recent users, listings, bookings, payments, and subscriptions.
+- Activate or deactivate user accounts. Deactivated users cannot log in or access protected API routes.
+- Change user roles between `TENANT`, `LANDLORD`, and `ADMIN`.
+- Change listing lifecycle status (`DRAFT`, `PENDING_PAYMENT`, `PUBLISHED`, `PAUSED`, or `ARCHIVED`).
+
+To grant the first administrator access, update an existing verified user's `role` to `ADMIN` directly in the database (for example, with Prisma Studio), then sign out and sign back in so the session reflects the new role. The console prevents an administrator from deactivating or demoting their own account.
+
+The user-activation field is introduced by the committed migration `20260813090000_add_user_activation`. Apply migrations locally with `npm run db:migrate`; Vercel applies it through `prisma migrate deploy` on Production deployments.
+
 ## Security notes
 
 - Passwords are hashed with `bcryptjs`; plaintext passwords are not stored.
 - Sessions are signed JWTs stored in `httpOnly`, `sameSite=lax` cookies. Cookies are marked `secure` in production.
 - Protected server routes derive the signed-in user from the session and apply role checks where needed.
+- Admin API routes re-check the persisted account role and active state rather than trusting only the role originally contained in the session token.
 - Payment webhook verification uses an HMAC signature before payment state is updated.
 - Secrets belong only in `.env`; do not commit that file.
 

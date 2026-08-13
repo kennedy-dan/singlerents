@@ -15,8 +15,9 @@ export async function GET() {
       role: true,
       emailVerifiedAt: true,
       phoneVerifiedAt: true,
+      isActive: true,
       paystackSubaccountCode: true,
     },
   });
-  return NextResponse.json({ user: u });
+  return u?.isActive ? NextResponse.json({ user: u }) : unauthorized();
 }

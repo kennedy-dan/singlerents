@@ -84,6 +84,7 @@ export default function Header() {
             Profile
           </Link>
         )}
+    
         {!user && (
           <Link className="link" href="/register" onClick={closeMenu}>
             List a room
@@ -91,6 +92,11 @@ export default function Header() {
         )}
       </nav>
       <div className={styles.actions}>
+            {user?.role === "ADMIN" && (
+          <Link className="link" href="/admin" onClick={closeMenu}>
+            Admin
+          </Link>
+        )}
         {user && (
           <Link
             className={styles.notificationBell}

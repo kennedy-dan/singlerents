@@ -70,22 +70,7 @@ export async function sendVerificationEmail({
         },
         {
           type: "text/html",
-          value: `<!doctype html>
-<html>
-  <body>
-    <p>Hi ${safeName},</p>
-    <p>Confirm that this is your email address to finish creating your SingleRents account.</p>
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-      <tr>
-        <td bgcolor="#eb7556" style="border-radius:5px;">
-          <a href="${safeConfirmationLink}" style="display:inline-block;padding:12px 18px;color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;line-height:20px;text-decoration:none;">Confirm my email</a>
-        </td>
-      </tr>
-    </table>
-    <p>This link expires in 24 hours.</p>
-    <p>If the button does not work, copy and paste this link into your browser:<br><a href="${safeConfirmationLink}">${safeConfirmationLink}</a></p>
-  </body>
-</html>`,
+          value: `<!doctype html><html><body style="margin:0;padding:0;background:#f6f7f2;font-family:Arial,sans-serif;color:#12352b;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:32px 16px;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fffefa;border:1px solid #e2e7df;border-radius:14px;overflow:hidden;"><tr><td style="padding:26px 32px;background:#12352b;color:#fffefa;"><div style="font-size:23px;font-weight:700;letter-spacing:-.5px;">⌂ singlerents</div><div style="margin-top:5px;font-size:11px;letter-spacing:1.2px;color:#f5c8b9;">ROOMS THAT FEEL LIKE HOME</div></td></tr><tr><td style="padding:34px 32px;"><div style="font-size:12px;font-weight:bold;letter-spacing:1.1px;color:#d85e41;">WELCOME TO SINGLERENTS</div><h1 style="margin:12px 0;font-size:29px;line-height:1.2;color:#12352b;">Confirm your email address</h1><p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#536961;">Hi ${safeName}, confirm your email to finish creating your account and start finding or listing a room.</p><table role="presentation" cellspacing="0" cellpadding="0"><tr><td bgcolor="#e76f51" style="border-radius:8px;"><a href="${safeConfirmationLink}" style="display:inline-block;padding:13px 20px;color:#fff;font-size:16px;font-weight:bold;line-height:20px;text-decoration:none;">Confirm my email →</a></td></tr></table><p style="margin:26px 0 0;font-size:13px;line-height:1.55;color:#718078;">This secure link expires in 24 hours. If you did not create a SingleRents account, you can safely ignore this email.</p><div style="margin:28px 0 0;padding-top:18px;border-top:1px solid #e2e7df;font-size:12px;line-height:1.5;color:#718078;">Button not working? Copy and paste this link into your browser:<br><a href="${safeConfirmationLink}" style="color:#d85e41;word-break:break-all;">${safeConfirmationLink}</a></div></td></tr><tr><td style="padding:20px 32px;background:#eef3eb;color:#536961;font-size:12px;">SingleRents · Verified rooms for renters in Lagos</td></tr></table></td></tr></table></body></html>`,
         },
       ],
     }),
