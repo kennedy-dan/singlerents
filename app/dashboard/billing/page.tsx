@@ -32,7 +32,7 @@ export default function Billing() {
           <h1>Plans and billing</h1>
           <p className="muted">
             The free plan lets you publish one room for 2 days. Pro and
-            Enterprise keep listings active and allow multiple photo URLs.
+            Enterprise keep listings active, with more photos for each room.
           </p>
           {error && <p className="error">{error}</p>}
           <div className="grid">
@@ -43,7 +43,7 @@ export default function Billing() {
             </section>
             <section className="card pad">
               <h3>Pro Landlord</h3>
-              <p>Ongoing listings and multiple photo URLs per room.</p>
+              <p>Ongoing listings and up to 2 photos per room.</p>
               <button className="button" onClick={() => choose("PRO")}>
                 Choose Pro - ₦5,000 /month
               </button>
@@ -51,8 +51,7 @@ export default function Billing() {
             <section className="card pad">
               <h3>Enterprise Agency</h3>
               <p>
-                Multi-photo listings, team access, analytics and portfolio
-                support.
+                Ongoing listings and up to 5 photos per room.
               </p>
               <button className="button" onClick={() => choose("ENTERPRISE")}>
                 Choose Enterprise - ₦7,000 /month

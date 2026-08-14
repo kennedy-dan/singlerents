@@ -3,6 +3,7 @@ import { db } from "../../../../lib/db";
 import { requireUser } from "../../../../lib/auth";
 import { bad, unauthorized } from "../../../../lib/http";
 import { NextResponse } from "next/server";
+import { paidSubscription, photoLimitForPlan } from "../../../../lib/entitlements";
 const schema = z.object({
   title: z.string().min(5).optional(),
   description: z.string().min(20).optional(),
@@ -28,9 +29,18 @@ export async function PATCH(req, { params }) {
       where: { id, landlordId: u.sub },
     });
     if (!owned) return unauthorized();
+    const data = schema.parse(await req.json());
+    if (data.photos) {
+      const plan = await paidSubscription(u.sub);
+      const limit = photoLimitForPlan(plan?.plan);
+      if (data.photos.length > limit)
+        return bad(
+          `${plan?.plan === "ENTERPRISE" ? "Enterprise" : plan?.plan === "PRO" ? "Pro" : "Your free listing"} allows up to ${limit} photo${limit === 1 ? "" : "s"} per room.`,
+        );
+    }
     const listing = await db.listing.update({
       where: { id },
-      data: schema.parse(await req.json()),
+      data,
     });
     return NextResponse.json({ listing });
   } catch {

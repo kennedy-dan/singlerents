@@ -11,6 +11,12 @@ export async function paidSubscription(landlordId) {
   });
 }
 
+export function photoLimitForPlan(plan?: string | null) {
+  if (plan === "ENTERPRISE") return 5;
+  if (plan === "PRO") return 2;
+  return 1;
+}
+
 export async function expireTrialListings() {
   await db.listing.updateMany({
     where: { status: "PUBLISHED", trialEndsAt: { lt: new Date() } },

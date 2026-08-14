@@ -9,7 +9,7 @@ The product supports the MVP journey from discovery to contact and payment: tena
 | Area | Included implementation |
 | --- | --- |
 | Accounts | Email/password registration and login, Google sign-in, branded email verification, JWT-backed HTTP-only session cookie, account activation, and tenant/landlord/admin roles. |
-| Listings | Landlord room creation and management, photos, amenities, location, price, availability, trial dates, and publication status. |
+| Listings | Landlord room creation and management, plan-based photo limits, amenities, location, price, availability, trial dates, and publication status. |
 | Search | Home-page room browsing with search/filter controls and an interactive Mapbox map. |
 | Profiles | Editable personal details and payment-related profile data. |
 | Contact | Secure tenant–landlord conversations with WebSocket-powered message updates. |
@@ -18,7 +18,7 @@ The product supports the MVP journey from discovery to contact and payment: tena
 | Notifications | In-app notifications with unread counts and live updates. |
 | Administration | Protected platform console for monitoring users, listings, bookings, payments, subscriptions, and platform fees; admins can manage account activation, roles, and listing status. |
 | Monetization | Listing trials, landlord subscriptions, Paystack payment initialization/verification/webhooks, and a 3% agency-fee field on rental payments. |
-| Responsive UI | Mobile navigation menu plus layouts that adapt to tablet and phone widths. |
+| Responsive UI | Animated, responsive landing page; mobile navigation; and a shared footer across the application. |
 
 ## Tech stack
 
@@ -28,6 +28,16 @@ The product supports the MVP journey from discovery to contact and payment: tena
 - **Authentication:** bcrypt password hashing, JOSE JWTs, Google OAuth
 - **Realtime:** Vercel WebSockets backed by Upstash Redis pub/sub
 - **Integrations:** Paystack, Mapbox, Cloudinary, SendGrid
+
+## Landlord plans
+
+| Plan | Listing allowance | Photos per room |
+| --- | --- | --- |
+| Free | One listing for 2 days | 1 |
+| Pro | Ongoing listings | 2 |
+| Enterprise | Ongoing listings | 5 |
+
+Photo limits are enforced when a landlord creates or updates a listing. On the landing page, the **List your room** call to action sends signed-in landlords to their dashboard, guides tenants to register as landlords, and sends signed-out visitors to registration.
 
 ## Email delivery
 
@@ -117,7 +127,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ```text
 app/
   api/              API routes for auth, listings, bookings, payments and more
-  components/       Shared UI, including the header and Mapbox map
+  components/       Shared UI, including the header, footer and Mapbox map
   dashboard/        Landlord dashboard, billing and room-management screens
   admin/            Protected platform-administration console
   messages/         Tenant-landlord messaging screen
@@ -131,7 +141,7 @@ vercel.json         Vercel WebSocket rewrite, Fluid Compute, and production buil
 ## Key product flows
 
 1. A user registers as a tenant or landlord, verifies their email, and signs in.
-2. A landlord creates a room listing with photos, price, location, amenities, and availability.
+2. A landlord creates a room listing with photos (Free: 1, Pro: 2, Enterprise: 5), price, location, amenities, and availability.
 3. A tenant searches listings, uses the map/filter interface, and opens a listing.
 4. The tenant starts a conversation or submits a booking request.
 5. The landlord manages the request in the dashboard; relevant users receive in-app updates.

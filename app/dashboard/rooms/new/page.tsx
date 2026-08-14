@@ -21,6 +21,7 @@ export default function NewRoom() {
     [uploading, setUploading] = useState(false),
     [blockDate, setBlockDate] = useState(""),
     [loading, setLoading] = useState(true);
+  const photoLimit = subscription?.plan === "ENTERPRISE" ? 5 : subscription ? 2 : 1;
   useEffect(() => {
     fetch("/api/subscriptions")
       .then((r) => (r.ok ? r.json() : null))
@@ -35,6 +36,15 @@ export default function NewRoom() {
   async function upload(event) {
     const files = [...event.target.files];
     if (!files.length) return;
+    const remaining = photoLimit - form.photos.length;
+    if (remaining <= 0) {
+      setError(`This plan allows up to ${photoLimit} photo${photoLimit === 1 ? "" : "s"} per room.`);
+      event.target.value = "";
+      return;
+    }
+    const filesToUpload = files.slice(0, remaining);
+    if (files.length > filesToUpload.length)
+      setError(`Only ${remaining} more photo${remaining === 1 ? "" : "s"} can be added to this room.`);
     setUploading(true);
     setError("");
     try {
@@ -42,7 +52,7 @@ export default function NewRoom() {
       const config = await sign.json();
       if (!sign.ok) throw Error(config.error);
       const uploads = await Promise.all(
-        files.map(async (file) => {
+        filesToUpload.map(async (file) => {
           const body = new FormData();
           body.set("file", file);
           body.set("api_key", config.apiKey);
@@ -113,8 +123,8 @@ export default function NewRoom() {
         <h1>List a room</h1>
         <p className="muted">
           {paid
-            ? `${subscription.plan} active: publish rooms with multiple photos.`
-            : "Your first room is free for 2 days and includes one photo. Continue with Pro or Enterprise after the trial."}
+            ? `${subscription.plan} active: add up to ${photoLimit} photos per room.`
+            : "Your first room is free for 2 days and includes one photo. Pro includes 2 photos and Enterprise includes 5."}
         </p>
         {!paid && (
           <button
@@ -170,12 +180,12 @@ export default function NewRoom() {
             onChange={(e) => update("amenities", e.target.value)}
           />
           <label>
-            Room photos
+            Room photos (up to {photoLimit})
             <input
               required={!form.photos.length}
               type="file"
               accept="image/*"
-              multiple={paid}
+              multiple={photoLimit > 1}
               onChange={upload}
             />
           </label>

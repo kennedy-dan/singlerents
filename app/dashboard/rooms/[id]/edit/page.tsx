@@ -21,6 +21,7 @@ export default function EditRoom() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [form, setForm] = useState<Form | null>(null);
+  const [subscription, setSubscription] = useState<any>(null);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [blockDate, setBlockDate] = useState("");
@@ -47,6 +48,15 @@ export default function EditRoom() {
       )
       .catch((e) => setError(e.message));
   }, [params.id]);
+  useEffect(() => {
+    fetch("/api/subscriptions")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) =>
+        setSubscription(data?.subscriptions?.find((item: any) => item.status === "SUCCESS") || null),
+      );
+  }, []);
+
+  const photoLimit = subscription?.plan === "ENTERPRISE" ? 5 : subscription ? 2 : 1;
 
   const update = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((current) => (current ? { ...current, [key]: value } : current));
@@ -54,13 +64,22 @@ export default function EditRoom() {
   async function upload(event: React.ChangeEvent<HTMLInputElement>) {
     const files = [...(event.target.files || [])];
     if (!files.length || !form) return;
+    const remaining = photoLimit - form.photos.length;
+    if (remaining <= 0) {
+      setError(`This plan allows up to ${photoLimit} photo${photoLimit === 1 ? "" : "s"} per room.`);
+      event.target.value = "";
+      return;
+    }
+    const filesToUpload = files.slice(0, remaining);
+    if (files.length > filesToUpload.length)
+      setError(`Only ${remaining} more photo${remaining === 1 ? "" : "s"} can be added to this room.`);
     setUploading(true);
     setError("");
     try {
       const sign = await fetch("/api/uploads/signature", { method: "POST" });
       const config = await sign.json();
       if (!sign.ok) throw Error(config.error);
-      const uploads = await Promise.all(files.map(async (file) => {
+      const uploads = await Promise.all(filesToUpload.map(async (file) => {
         const body = new FormData();
         body.set("file", file);
         body.set("api_key", config.apiKey);
@@ -112,7 +131,7 @@ export default function EditRoom() {
       <select value={form.type} onChange={(e) => update("type", e.target.value)}><option>Private room</option><option>Shared room</option><option>Entire place</option></select>
       <input placeholder="Amenities, separated by commas" value={form.amenities} onChange={(e) => update("amenities", e.target.value)} />
       <select value={form.status} onChange={(e) => update("status", e.target.value as Form["status"])}><option value="PUBLISHED">Published</option><option value="PAUSED">Paused</option><option value="DRAFT">Draft</option><option value="ARCHIVED">Archived</option></select>
-      <label>Room photos<input type="file" accept="image/*" multiple onChange={upload} /></label>
+      <label>Room photos (up to {photoLimit})<input type="file" accept="image/*" multiple={photoLimit > 1} onChange={upload} /></label>
       {uploading && <small className="muted">Uploading images…</small>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "12px" }}>{form.photos.map((photo) => <div key={photo} style={{ position: "relative" }}><img src={photo} alt="Room" style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: "8px" }} /><button type="button" aria-label="Remove photo" className="link" style={{ position: "absolute", top: 4, right: 4 }} onClick={() => update("photos", form.photos.filter((item) => item !== photo))}>×</button></div>)}</div>
       <label>Blocked availability dates<div className="button-row"><input type="date" min={new Date().toISOString().slice(0, 10)} value={blockDate} onChange={(e) => setBlockDate(e.target.value)} /><button type="button" className="link" onClick={() => { if (blockDate && !form.blockedDates.includes(blockDate)) update("blockedDates", [...form.blockedDates, blockDate]); setBlockDate(""); }}>Block date</button></div></label>

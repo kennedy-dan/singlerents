@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "./components/Header";
 import Map from "./components/Map";
 const money = (n) => `₦${Number(n).toLocaleString("en-NG")}`;
@@ -46,6 +47,7 @@ function Stars({ value, size = 15 }) {
   );
 }
 export default function Home() {
+  const router = useRouter();
   const [filters, setFilters] = useState({
       q: "",
       type: "",
@@ -55,7 +57,8 @@ export default function Home() {
     [rooms, setRooms] = useState([]),
     [selected, setSelected] = useState(null),
     [notice, setNotice] = useState(""),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [user, setUser] = useState(null);
   async function load() {
     const p = new URLSearchParams({
       q: filters.q,
@@ -78,11 +81,21 @@ export default function Home() {
   useEffect(() => {
     load();
   }, [filters.q, filters.type, filters.max, filters.amenities]);
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setUser(data?.user || null));
+  }, []);
+  function listRoom() {
+    if (!user) return router.push("/register");
+    if (user.role === "LANDLORD") return router.push("/dashboard");
+    setNotice("Register as a landlord to list a room.");
+  }
   return (
     <>
       <Header />
       <section className="hero">
-        <div>
+        <div className="hero-copy">
           <p className="eyebrow">ROOMS THAT FEEL LIKE HOME</p>
           <h1>
             Your next room is
@@ -95,10 +108,13 @@ export default function Home() {
           </p>
           <b>✓ Verified landlords &nbsp; ✓ No hidden fees</b>
         </div>
-        <img
-          src="https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=1400&q=90"
-          alt="Apartment"
-        />
+        <div className="hero-image-wrap">
+          <img
+            src="https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=1400&q=90"
+            alt="Apartment"
+          />
+          <div className="hero-note"><span>✦</span> Homes chosen with care</div>
+        </div>
       </section>
       <section className="search">
         <input
@@ -133,6 +149,38 @@ export default function Home() {
         <button className="button" onClick={load}>
           Search rooms
         </button>
+      </section>
+      <section className="section journey" id="how-it-works">
+        <div className="journey-heading">
+          <p className="eyebrow">A BETTER WAY TO RENT</p>
+          <h2>Your move, made simple</h2>
+          <p className="muted">Everything you need to go from browsing to a place that feels like yours.</p>
+        </div>
+        <div className="steps">
+          <article className="step">
+            <span className="step-number">01</span>
+            <div className="step-icon">⌕</div>
+            <h3>Discover your fit</h3>
+            <p>Filter real rooms by area, budget, room type, and the details that matter to you.</p>
+          </article>
+          <article className="step">
+            <span className="step-number">02</span>
+            <div className="step-icon">✉</div>
+            <h3>Talk directly</h3>
+            <p>Ask questions, get to know the landlord, and arrange a viewing on your schedule.</p>
+          </article>
+          <article className="step">
+            <span className="step-number">03</span>
+            <div className="step-icon">⌂</div>
+            <h3>Settle in happily</h3>
+            <p>Choose with confidence and make your next room feel like home from day one.</p>
+          </article>
+        </div>
+      </section>
+      <section className="trust-strip" aria-label="Singlerents benefits">
+        <div><b>Direct connections</b><span>Speak with landlords, no middlemen.</span></div>
+        <div><b>Clear, upfront details</b><span>Know the rent, amenities, and location first.</span></div>
+        <div><b>Built for peace of mind</b><span>Verified profiles and honest reviews.</span></div>
       </section>
       <section className="section" id="rooms">
         <p className="eyebrow">LIVE LISTINGS</p>
@@ -177,10 +225,16 @@ export default function Home() {
         <h2>Explore on the map</h2>
         <Map listings={rooms} onSelect={setSelected} />
       </section>
-      <footer className="footer">
-        <b>⌂ singlerents</b>
-        <span>© 2026 Singlerents</span>
-      </footer>
+      <section className="host-cta">
+        <div>
+          <p className="eyebrow">FOR LANDLORDS</p>
+          <h2>A better tenant could be one listing away.</h2>
+          <p>Share your available room with people actively looking for a place to call home.</p>
+        </div>
+        <button className="button light-button" onClick={listRoom}>
+          List your room <span>→</span>
+        </button>
+      </section>
       {selected && (
         <Room
           room={selected}

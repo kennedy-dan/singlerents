@@ -1,4 +1,5 @@
 import "./globals.css";
+import Footer from "./components/Footer";
 export const metadata = {
   title: "SingleRents | Find a room that feels like home",
   description: "Verified rooms for renters in Lagos",
@@ -6,7 +7,10 @@ export const metadata = {
 export default function Layout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Footer />
+      </body>
     </html>
   );
 }

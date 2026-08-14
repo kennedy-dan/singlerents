@@ -5,6 +5,7 @@ import { bad, unauthorized } from "../../../lib/http";
 import {
   paidSubscription,
   expireTrialListings,
+  photoLimitForPlan,
 } from "../../../lib/entitlements";
 import { NextResponse } from "next/server";
 import { sendEmail, emailParagraph } from "../../../lib/email";
@@ -79,9 +80,7 @@ export async function POST(req) {
           { status: 402 },
         );
       if (data.photos.length > 1)
-        return bad(
-          "Your free listing includes one photo. Pro and Enterprise plans allow multiple photo URLs.",
-        );
+        return bad("Your free listing includes one photo.");
       const trialEndsAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
       const listing = await db.listing.create({
         data: {
@@ -99,6 +98,10 @@ export async function POST(req) {
       });
       return NextResponse.json({ listing, trialEndsAt }, { status: 201 });
     }
+    if (data.photos.length > photoLimitForPlan(plan.plan))
+      return bad(
+        `${plan.plan === "ENTERPRISE" ? "Enterprise" : "Pro"} allows up to ${photoLimitForPlan(plan.plan)} photos per room.`,
+      );
     const listing = await db.listing.create({
       data: { ...data, landlordId: user.sub, status: "PUBLISHED" },
     });
