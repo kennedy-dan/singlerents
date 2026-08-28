@@ -65,9 +65,7 @@ export default function Billing() {
                 <div>
                   <b>{s.plan}</b>
                   <small>
-                    {s.status}{" "}
-                    {s.trialEndsAt &&
-                      `· trial ends ${new Date(s.trialEndsAt).toLocaleDateString()}`}
+                    {s.status}
                   </small>
                 </div>
               </div>

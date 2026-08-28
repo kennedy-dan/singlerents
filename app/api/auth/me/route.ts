@@ -17,6 +17,7 @@ export async function GET() {
       phoneVerifiedAt: true,
       isActive: true,
       paystackSubaccountCode: true,
+      paystackTransferRecipientCode: true,
     },
   });
   return u?.isActive ? NextResponse.json({ user: u }) : unauthorized();

@@ -32,6 +32,12 @@ enum PaymentStatus {
   FAILED
   REFUNDED
 }
+enum PayoutStatus {
+  HELD
+  PROCESSING
+  RELEASED
+  FAILED
+}
 enum PaymentKind {
   LISTING
   RENTAL
@@ -62,6 +68,7 @@ model User {
   subscriptions Subscription[]
   payments Payment[]
   paystackSubaccountCode String?
+  paystackTransferRecipientCode String?
   emailVerificationTokens EmailVerificationToken[]
 }
 model EmailVerificationToken {
@@ -149,7 +156,11 @@ model Payment {
   reference String @unique
   amount Int
   agencyFee Int @default(0)
+  landlordShare Int @default(0)
   status PaymentStatus @default(PENDING)
+  payoutStatus PayoutStatus @default(HELD)
+  payoutReference String? @unique
+  releasedAt DateTime?
   createdAt DateTime @default(now())
   booking Booking? @relation(fields:[bookingId],references:[id])
   listing Listing? @relation(fields:[listingId],references:[id])

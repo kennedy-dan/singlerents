@@ -4,6 +4,9 @@ import { db } from "../../../lib/db";
 import { bad, unauthorized } from "../../../lib/http";
 import { NextResponse } from "next/server";
 
+// Paystack amounts are stored in kobo; the admin dashboard displays naira.
+const toNaira = (amount: number) => amount / 100;
+
 const userAction = z.object({
   type: z.literal("user"),
   id: z.string(),
@@ -21,6 +24,7 @@ const listingAction = z.object({
     "ARCHIVED",
   ]),
 });
+const payoutAction = z.object({ type: z.literal("payout"), id: z.string() });
 
 export async function GET() {
   try {
@@ -70,7 +74,10 @@ export async function GET() {
             kind: true,
             amount: true,
             agencyFee: true,
+            landlordShare: true,
             status: true,
+            payoutStatus: true,
+            releasedAt: true,
             reference: true,
             createdAt: true,
             payer: { select: { name: true, email: true } },
@@ -104,14 +111,19 @@ export async function GET() {
       users,
       listings,
       bookings,
-      payments,
+      payments: payments.map((payment) => ({
+        ...payment,
+        amount: toNaira(payment.amount),
+        agencyFee: toNaira(payment.agencyFee),
+        landlordShare: toNaira(payment.landlordShare),
+      })),
       subscriptions,
       metrics: {
         users: counts[0],
         listings: counts[1],
         bookings: counts[2],
-        completedPaymentVolume: counts[3]._sum.amount || 0,
-        platformFees: counts[3]._sum.agencyFee || 0,
+        completedPaymentVolume: toNaira(counts[3]._sum.amount || 0),
+        platformFees: toNaira(counts[3]._sum.agencyFee || 0),
       },
     });
   } catch (error) {
@@ -124,7 +136,7 @@ export async function PATCH(request: Request) {
   try {
     const admin = await requireAdmin();
     const action = z
-      .union([userAction, listingAction])
+      .union([userAction, listingAction, payoutAction])
       .parse(await request.json());
     if (action.type === "user") {
       if (action.id === admin.sub && action.isActive === false)
@@ -143,12 +155,78 @@ export async function PATCH(request: Request) {
       });
       return NextResponse.json({ user });
     }
-    const listing = await db.listing.update({
+    if (action.type === "listing") {
+      const listing = await db.listing.update({
+        where: { id: action.id },
+        data: { status: action.status },
+        select: { id: true },
+      });
+      return NextResponse.json({ listing });
+    }
+
+    const payment = await db.payment.findUnique({
       where: { id: action.id },
-      data: { status: action.status },
-      select: { id: true },
+      include: {
+        booking: {
+          include: {
+            listing: {
+              include: {
+                landlord: { select: { paystackTransferRecipientCode: true } },
+              },
+            },
+          },
+        },
+      },
     });
-    return NextResponse.json({ listing });
+    if (!payment || payment.kind !== "RENTAL" || payment.status !== "SUCCESS")
+      return bad("Only successful rental payments can be released.");
+    if (!payment.booking?.listing.landlord.paystackTransferRecipientCode)
+      return bad("The landlord has not connected a bank account for payouts.");
+    if (!["HELD", "FAILED"].includes(payment.payoutStatus))
+      return bad("This landlord payout has already been submitted.");
+
+    const payoutReference = `payout_${payment.id}_${Date.now()}`;
+    const locked = await db.payment.updateMany({
+      where: { id: payment.id, payoutStatus: { in: ["HELD", "FAILED"] } },
+      data: { payoutStatus: "PROCESSING", payoutReference },
+    });
+    if (!locked.count)
+      return bad("This landlord payout is already being processed.");
+    try {
+      const response = await fetch("https://api.paystack.co/transfer", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          source: "balance",
+          amount: payment.landlordShare,
+          recipient:
+            payment.booking.listing.landlord.paystackTransferRecipientCode,
+          reference: payoutReference,
+          reason: `97% rent payout for ${payment.reference}`,
+        }),
+      });
+      const result = await response.json();
+      console.log("Paystack transfer response:", result);
+      if (!response.ok || !result.status) {
+        await db.payment.update({
+          where: { id: payment.id },
+          data: { payoutStatus: "FAILED" },
+        });
+        return bad(result.message || "Unable to submit landlord payout.");
+      }
+      return NextResponse.json({
+        payout: { id: payment.id, status: "PROCESSING" },
+      });
+    } catch (error) {
+      await db.payment.update({
+        where: { id: payment.id },
+        data: { payoutStatus: "FAILED" },
+      });
+      throw error;
+    }
   } catch (error) {
     console.error("Admin update error:", error);
     return bad("Unable to apply the admin update.");

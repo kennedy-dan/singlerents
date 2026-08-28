@@ -39,7 +39,7 @@ export default function Dashboard() {
     load();
   }, []);
   useEffect(() => {
-    if (user?.role !== "LANDLORD" || user.paystackSubaccountCode) return;
+    if (user?.role !== "LANDLORD" || user.paystackTransferRecipientCode) return;
     let active = true;
     setBanksLoading(true);
     fetch("/api/payments/banks")
@@ -144,7 +144,7 @@ export default function Dashboard() {
           <div>
             <h1>Your rooms and earnings</h1>
             <p className="muted">
-              You receive 97% of every completed rent payment.
+              Rent is held by SingleRents and released to you at 97% after admin approval.
             </p>
           </div>
           <Link className="button" href="/dashboard/rooms/new">
@@ -153,18 +153,22 @@ export default function Dashboard() {
         </div>
         <div className="grid">
           <section className="panel">
-            <small>YOUR 97% BALANCE</small>
+            <small>RELEASED PAYOUTS</small>
             <h2>{naira(earnings?.landlordBalance)}</h2>
+          </section>
+          <section className="panel">
+            <small>AWAITING ADMIN RELEASE</small>
+            <h2>{naira(earnings?.awaitingRelease)}</h2>
           </section>
           {/* <section className="panel">
             <small>AGENCY/ADMIN 3%</small>
             <h2>{naira(earnings?.platformFees)}</h2>
           </section> */}
         </div>
-        {user && !user.paystackSubaccountCode && (
+        {user && !user.paystackTransferRecipientCode && (
           <section className="panel">
-            <h2>Connect your Paystack payout account</h2>
-            <p className="muted">Your 97% is settled to this bank account.</p>
+            <h2>Connect your bank account for payouts</h2>
+            <p className="muted">An administrator releases your 97% share to this bank account after rent is received.</p>
             <form className="form" onSubmit={connect}>
               <input
                 name="businessName"
@@ -199,7 +203,7 @@ export default function Dashboard() {
                 className="button"
                 disabled={banksLoading || !!banksError}
               >
-                Connect payout account
+                Connect bank account
               </button>
             </form>
           </section>
@@ -239,7 +243,7 @@ export default function Dashboard() {
             <p className="muted"><b>{bookingToConfirm.listing.title}</b><br />Confirming this amount lets the tenant continue to Paystack payment.</p>
             <form className="form" onSubmit={(event) => { event.preventDefault(); confirm(); }}>
               <label>Monthly rent (₦)<input autoFocus inputMode="numeric" value={leaseAmount} onChange={(event) => setLeaseAmount(event.target.value)} placeholder="e.g. 250000" disabled={confirmingRent} /></label>
-              <div className="rent-summary"><span>Tenant pays</span><b>{rent(Number(leaseAmount.replace(/,/g, "")) || 0)}</b><small>You receive 97% after the platform fee.</small></div>
+              <div className="rent-summary"><span>Tenant pays</span><b>{rent(Number(leaseAmount.replace(/,/g, "")) || 0)}</b><small>SingleRents holds the payment; admin releases your 97% share after the platform fee.</small></div>
               {rentError && <span className="error">{rentError}</span>}
               <div className="modal-actions"><button type="button" className="link" onClick={() => setBookingToConfirm(null)} disabled={confirmingRent}>Cancel</button><button className="button" disabled={confirmingRent}>{confirmingRent ? "Confirming…" : "Confirm rent"}</button></div>
             </form>
@@ -284,7 +288,7 @@ function Bookings({
             </button>
           )}
           {b.payment?.status === "SUCCESS" && (
-            <b>{tenant ? "Paid" : "97% credited"}</b>
+            <b>{tenant ? "Paid" : b.payment.payoutStatus === "RELEASED" ? "97% released" : "Payment held for admin release"}</b>
           )}
         </div>
       ))}

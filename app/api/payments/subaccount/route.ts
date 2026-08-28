@@ -17,19 +17,18 @@ export async function POST(req) {
     const user = await requireUser();
     if (user.role !== "LANDLORD") return unauthorized();
     const input = inputSchema.parse(await req.json());
-    const response = await fetch("https://api.paystack.co/subaccount", {
+    const response = await fetch("https://api.paystack.co/transferrecipient", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        business_name: input.businessName,
+        type: "nuban",
+        name: input.businessName,
         account_number: input.accountNumber,
-        settlement_bank: input.bankCode,
-        percentage_charge: 3,
-        primary_contact_name: user.name,
-        primary_contact_email: user.email,
+        bank_code: input.bankCode,
+        currency: "NGN",
       }),
     });
     const result = await response.json();
@@ -37,9 +36,9 @@ export async function POST(req) {
       return bad(result.message || "Unable to set up your payout account.");
     await db.user.update({
       where: { id: user.sub },
-      data: { paystackSubaccountCode: result.data.subaccount_code },
+      data: { paystackTransferRecipientCode: result.data.recipient_code },
     });
-    return NextResponse.json({ subaccountCode: result.data.subaccount_code });
+    return NextResponse.json({ recipientCode: result.data.recipient_code });
   } catch (error) {
     if (error.message === "UNAUTHORIZED") return unauthorized();
     return bad(

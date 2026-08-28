@@ -17,6 +17,8 @@ export async function GET() {
       select: {
         amount: true,
         agencyFee: true,
+        landlordShare: true,
+        payoutStatus: true,
         createdAt: true,
         booking: { select: { listing: { select: { title: true } } } },
       },
@@ -30,10 +32,17 @@ export async function GET() {
       (sum, payment) => sum + payment.agencyFee,
       0,
     );
+    const releasedBalance = payments
+      .filter((payment) => payment.payoutStatus === "RELEASED")
+      .reduce((sum, payment) => sum + payment.landlordShare, 0);
+    const awaitingRelease = payments
+      .filter((payment) => ["HELD", "PROCESSING"].includes(payment.payoutStatus))
+      .reduce((sum, payment) => sum + payment.landlordShare, 0);
     return NextResponse.json({
       totalRent,
       platformFees,
-      landlordBalance: totalRent - platformFees,
+      landlordBalance: releasedBalance,
+      awaitingRelease,
       payments,
     });
   } catch (error) {

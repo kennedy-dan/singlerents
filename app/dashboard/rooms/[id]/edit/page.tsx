@@ -30,7 +30,8 @@ export default function EditRoom() {
     fetch(`/api/listings/${params.id}`)
       .then(async (response) => {
         const result = await response.json();
-        if (!response.ok) throw Error(result.error || "Unable to load listing.");
+        if (!response.ok)
+          throw Error(result.error || "Unable to load listing.");
         return result.listing;
       })
       .then((listing) =>
@@ -52,11 +53,15 @@ export default function EditRoom() {
     fetch("/api/subscriptions")
       .then((response) => (response.ok ? response.json() : null))
       .then((data) =>
-        setSubscription(data?.subscriptions?.find((item: any) => item.status === "SUCCESS") || null),
+        setSubscription(
+          data?.subscriptions?.find((item: any) => item.status === "SUCCESS") ||
+            null,
+        ),
       );
   }, []);
 
-  const photoLimit = subscription?.plan === "ENTERPRISE" ? 5 : subscription ? 2 : 1;
+  const photoLimit =
+    subscription?.plan === "ENTERPRISE" ? 5 : subscription ? 2 : 1;
 
   const update = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((current) => (current ? { ...current, [key]: value } : current));
@@ -66,31 +71,41 @@ export default function EditRoom() {
     if (!files.length || !form) return;
     const remaining = photoLimit - form.photos.length;
     if (remaining <= 0) {
-      setError(`This plan allows up to ${photoLimit} photo${photoLimit === 1 ? "" : "s"} per room.`);
+      setError(
+        `This plan allows up to ${photoLimit} photo${photoLimit === 1 ? "" : "s"} per room.`,
+      );
       event.target.value = "";
       return;
     }
     const filesToUpload = files.slice(0, remaining);
     if (files.length > filesToUpload.length)
-      setError(`Only ${remaining} more photo${remaining === 1 ? "" : "s"} can be added to this room.`);
+      setError(
+        `Only ${remaining} more photo${remaining === 1 ? "" : "s"} can be added to this room.`,
+      );
     setUploading(true);
     setError("");
     try {
       const sign = await fetch("/api/uploads/signature", { method: "POST" });
       const config = await sign.json();
       if (!sign.ok) throw Error(config.error);
-      const uploads = await Promise.all(filesToUpload.map(async (file) => {
-        const body = new FormData();
-        body.set("file", file);
-        body.set("api_key", config.apiKey);
-        body.set("timestamp", String(config.timestamp));
-        body.set("folder", config.folder);
-        body.set("signature", config.signature);
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`, { method: "POST", body });
-        const result = await response.json();
-        if (!response.ok) throw Error(result.error?.message || "Image upload failed.");
-        return result.secure_url;
-      }));
+      const uploads = await Promise.all(
+        filesToUpload.map(async (file) => {
+          const body = new FormData();
+          body.set("file", file);
+          body.set("api_key", config.apiKey);
+          body.set("timestamp", String(config.timestamp));
+          body.set("folder", config.folder);
+          body.set("signature", config.signature);
+          const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`,
+            { method: "POST", body },
+          );
+          const result = await response.json();
+          if (!response.ok)
+            throw Error(result.error?.message || "Image upload failed.");
+          return result.secure_url;
+        }),
+      );
       update("photos", [...form.photos, ...uploads]);
     } catch (e: any) {
       setError(e.message || "Image upload failed.");
@@ -110,7 +125,10 @@ export default function EditRoom() {
       body: JSON.stringify({
         ...form,
         price: Number(form.price),
-        amenities: form.amenities.split(",").map((item) => item.trim()).filter(Boolean),
+        amenities: form.amenities
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
         availability: { blockedDates: form.blockedDates },
       }),
     });
@@ -121,22 +139,179 @@ export default function EditRoom() {
     }
   }
 
-  if (!form && !error) return <><Header /><PageLoader label="Loading listing…" /></>;
-  return <><Header /><main className="page"><p className="eyebrow">LANDLORD LISTING</p><h1>Edit room</h1>
-    {error && !form ? <div className="notice">{error}</div> : form && <form className="panel form listing-form" onSubmit={submit}>
-      <input required minLength={5} placeholder="Listing title" value={form.title} onChange={(e) => update("title", e.target.value)} />
-      <textarea required minLength={20} placeholder="Describe the room, house and rules" value={form.description} onChange={(e) => update("description", e.target.value)} />
-      <input required type="number" min={1} placeholder="Monthly rent (₦)" value={form.price} onChange={(e) => update("price", e.target.value)} />
-      <input required minLength={10} placeholder="Full address" value={form.location} onChange={(e) => update("location", e.target.value)} />
-      <select value={form.type} onChange={(e) => update("type", e.target.value)}><option>Private room</option><option>Shared room</option><option>Entire place</option></select>
-      <input placeholder="Amenities, separated by commas" value={form.amenities} onChange={(e) => update("amenities", e.target.value)} />
-      <select value={form.status} onChange={(e) => update("status", e.target.value as Form["status"])}><option value="PUBLISHED">Published</option><option value="PAUSED">Paused</option><option value="DRAFT">Draft</option><option value="ARCHIVED">Archived</option></select>
-      <label>Room photos (up to {photoLimit})<input type="file" accept="image/*" multiple={photoLimit > 1} onChange={upload} /></label>
-      {uploading && <small className="muted">Uploading images…</small>}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "12px" }}>{form.photos.map((photo) => <div key={photo} style={{ position: "relative" }}><img src={photo} alt="Room" style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: "8px" }} /><button type="button" aria-label="Remove photo" className="link" style={{ position: "absolute", top: 4, right: 4 }} onClick={() => update("photos", form.photos.filter((item) => item !== photo))}>×</button></div>)}</div>
-      <label>Blocked availability dates<div className="button-row"><input type="date" min={new Date().toISOString().slice(0, 10)} value={blockDate} onChange={(e) => setBlockDate(e.target.value)} /><button type="button" className="link" onClick={() => { if (blockDate && !form.blockedDates.includes(blockDate)) update("blockedDates", [...form.blockedDates, blockDate]); setBlockDate(""); }}>Block date</button></div></label>
-      <div className="button-row">{form.blockedDates.slice().sort().map((date) => <button type="button" className="status paused" key={date} onClick={() => update("blockedDates", form.blockedDates.filter((item) => item !== date))}>{date} ×</button>)}</div>
-      {error && <span className="error">{error}</span>}<button className="button" disabled={uploading || !form.photos.length}>Save changes</button>
-    </form>}
-  </main></>;
+  if (!form && !error)
+    return (
+      <>
+        <Header />
+        <PageLoader label="Loading listing…" />
+      </>
+    );
+  return (
+    <>
+      <Header />
+      <main className="page">
+        <p className="eyebrow">LANDLORD LISTING</p>
+        <h1>Edit room</h1>
+        {error && !form ? (
+          <div className="notice">{error}</div>
+        ) : (
+          form && (
+            <form className="panel form listing-form" onSubmit={submit}>
+              <input
+                required
+                minLength={5}
+                placeholder="Listing title"
+                value={form.title}
+                onChange={(e) => update("title", e.target.value)}
+              />
+              <textarea
+                required
+                minLength={20}
+                placeholder="Describe the room, house and rules"
+                value={form.description}
+                onChange={(e) => update("description", e.target.value)}
+              />
+              <input
+                required
+                type="number"
+                min={1}
+                placeholder="Monthly rent (₦)"
+                value={form.price}
+                onChange={(e) => update("price", e.target.value)}
+              />
+              <input
+                required
+                minLength={10}
+                placeholder="Full address"
+                value={form.location}
+                onChange={(e) => update("location", e.target.value)}
+              />
+              <select
+                value={form.type}
+                onChange={(e) => update("type", e.target.value)}
+              >
+                <option>Private room</option>
+                <option>Shared room</option>
+                <option>Entire place</option>
+              </select>
+              <input
+                placeholder="Amenities, separated by commas"
+                value={form.amenities}
+                onChange={(e) => update("amenities", e.target.value)}
+              />
+              <select
+                value={form.status}
+                onChange={(e) =>
+                  update("status", e.target.value as Form["status"])
+                }
+              >
+                <option value="PUBLISHED">Published</option>
+                <option value="PAUSED">Paused</option>
+                <option value="DRAFT">Draft</option>
+                <option value="ARCHIVED">Archived</option>
+              </select>
+              <label>
+                Room photos (up to {photoLimit})
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple={photoLimit > 1}
+                  onChange={upload}
+                />
+              </label>
+              {uploading && <small className="muted">Uploading images…</small>}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                  gap: "12px",
+                }}
+              >
+                {form.photos.map((photo) => (
+                  <div key={photo} style={{ position: "relative" }}>
+                    <img
+                      src={photo}
+                      alt="Room"
+                      style={{
+                        width: "100%",
+                        aspectRatio: "1 / 1",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Remove photo"
+                      className="link"
+                      style={{ position: "absolute", top: 4, right: 4 }}
+                      onClick={() =>
+                        update(
+                          "photos",
+                          form.photos.filter((item) => item !== photo),
+                        )
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <label>
+                Blocked availability dates
+                <div className="button-row">
+                  <input
+                    type="date"
+                    min={new Date().toISOString().slice(0, 10)}
+                    value={blockDate}
+                    onChange={(e) => setBlockDate(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="link"
+                    onClick={() => {
+                      if (blockDate && !form.blockedDates.includes(blockDate))
+                        update("blockedDates", [
+                          ...form.blockedDates,
+                          blockDate,
+                        ]);
+                      setBlockDate("");
+                    }}
+                  >
+                    Block date
+                  </button>
+                </div>
+              </label>
+              <div className="button-row">
+                {form.blockedDates
+                  .slice()
+                  .sort()
+                  .map((date) => (
+                    <button
+                      type="button"
+                      className="status paused"
+                      key={date}
+                      onClick={() =>
+                        update(
+                          "blockedDates",
+                          form.blockedDates.filter((item) => item !== date),
+                        )
+                      }
+                    >
+                      {date} ×
+                    </button>
+                  ))}
+              </div>
+              {error && <span className="error">{error}</span>}
+              <button
+                className="button"
+                disabled={uploading || !form.photos.length}
+              >
+                Save changes
+              </button>
+            </form>
+          )
+        )}
+      </main>
+    </>
+  );
 }

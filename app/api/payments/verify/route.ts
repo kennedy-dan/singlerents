@@ -3,6 +3,7 @@ import { requireUser } from "../../../../lib/auth";
 import { bad, unauthorized } from "../../../../lib/http";
 import { NextResponse } from "next/server";
 import { sendEmail, emailParagraph } from "../../../../lib/email";
+import { activatePaidSubscription } from "../../../../lib/entitlements";
 
 export async function GET(req) {
   try {
@@ -56,22 +57,18 @@ export async function GET(req) {
           void sendEmail({
             to: booking.listing.landlord.email,
             subject: "Rent payment received on SingleRents",
-            text: `The payment for ${booking.listing.title} was successful.`,
+            text: `The payment for ${booking.listing.title} was successful and is now held for admin release.`,
             html: emailParagraph(
-              `The payment for ${booking.listing.title} was successful.`,
+              `The payment for ${booking.listing.title} was successful and is now held for admin release.`,
             ),
           });
       }
     } else if (subscription)
-      await db.subscription.update({
-        where: { id: subscription.id },
-        data: {
-          status: "SUCCESS",
-          startsAt: new Date(),
-          paystackSubscriptionCode: result.data.subscription_code || undefined,
-          paystackEmailToken: result.data.email_token || undefined,
-        },
-      });
+      await activatePaidSubscription(
+        reference,
+        result.data.subscription_code,
+        result.data.email_token,
+      );
     return NextResponse.json({
       status: "SUCCESS",
       kind: payment?.kind || "SUBSCRIPTION",

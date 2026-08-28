@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import { db } from "../../../../lib/db";
 import { sendEmail, emailParagraph } from "../../../../lib/email";
+import { activatePaidSubscription } from "../../../../lib/entitlements";
 export const runtime = "nodejs";
 export async function POST(req) {
   const raw = await req.text(),
@@ -25,15 +26,11 @@ export async function POST(req) {
         where: { reference },
       });
       if (subscription)
-        await db.subscription.update({
-          where: { id: subscription.id },
-          data: {
-            status: "SUCCESS",
-            startsAt: new Date(),
-            paystackSubscriptionCode: data.subscription_code || undefined,
-            paystackEmailToken: data.email_token || undefined,
-          },
-        });
+        await activatePaidSubscription(
+          reference,
+          data.subscription_code,
+          data.email_token,
+        );
       return new Response("ok");
     }
     await db.payment.update({
@@ -59,23 +56,23 @@ export async function POST(req) {
         void sendEmail({
           to: booking.listing.landlord.email,
           subject: "Rent payment received on SingleRents",
-          text: `The payment for ${booking.listing.title} was successful.`,
+          text: `The payment for ${booking.listing.title} was successful and is now held for admin release.`,
           html: emailParagraph(
-            `The payment for ${booking.listing.title} was successful.`,
+            `The payment for ${booking.listing.title} was successful and is now held for admin release.`,
           ),
         });
     }
-    if (payment.kind === "SUBSCRIPTION")
-      await db.subscription.updateMany({
-        where: { reference },
-        data: {
-          status: "SUCCESS",
-          startsAt: new Date(),
-          paystackSubscriptionCode: data.subscription_code || undefined,
-          paystackEmailToken: data.email_token || undefined,
-        },
-      });
   }
+  if (reference && event.event === "transfer.success")
+    await db.payment.updateMany({
+      where: { payoutReference: reference, payoutStatus: "PROCESSING" },
+      data: { payoutStatus: "RELEASED", releasedAt: new Date() },
+    });
+  if (reference && ["transfer.failed", "transfer.reversed"].includes(event.event))
+    await db.payment.updateMany({
+      where: { payoutReference: reference, payoutStatus: "PROCESSING" },
+      data: { payoutStatus: "FAILED" },
+    });
   if (event.event === "invoice.payment_failed")
     await db.subscription.updateMany({
       where: {

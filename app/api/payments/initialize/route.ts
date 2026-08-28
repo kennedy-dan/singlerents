@@ -35,13 +35,11 @@ export async function POST(req) {
       if (!planCode)
         return bad(`The ${input.plan} Paystack plan is not configured.`);
       const reference = `sub_${Date.now()}_${user.sub}`;
-      const trialEndsAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
       const subscription = await db.subscription.create({
         data: {
           landlordId: user.sub,
           plan: input.plan,
           reference,
-          trialEndsAt,
           status: "PENDING",
         },
       });
@@ -55,7 +53,6 @@ export async function POST(req) {
         metadata: {
           kind: "SUBSCRIPTION",
           subscriptionId: subscription.id,
-          trialEndsAt: trialEndsAt.toISOString(),
         },
       });
       console.log("Paystack response:", paystack);
@@ -66,7 +63,6 @@ export async function POST(req) {
         reference,
         authorizationUrl: data.data.authorization_url,
         accessCode: data.data.access_code,
-        trialEndsAt,
       });
     }
     if (!input.bookingId) return bad("A booking is required.");
@@ -74,7 +70,9 @@ export async function POST(req) {
       where: { id: input.bookingId },
       include: {
         listing: {
-          include: { landlord: { select: { paystackSubaccountCode: true } } },
+          include: {
+            landlord: { select: { paystackTransferRecipientCode: true } },
+          },
         },
       },
     });
@@ -82,9 +80,9 @@ export async function POST(req) {
     if (booking.tenantId !== user.sub) return unauthorized();
     if (booking.status !== "CONFIRMED")
       return bad("The landlord must confirm this tenancy before payment.");
-    if (!booking.listing.landlord.paystackSubaccountCode)
+    if (!booking.listing.landlord.paystackTransferRecipientCode)
       return bad(
-        "This landlord has not completed their Paystack payout setup yet.",
+        "This landlord has not completed their Paystack bank payout setup yet.",
       );
     const existingPayment = await db.payment.findUnique({
       where: { bookingId: booking.id },
@@ -105,6 +103,7 @@ export async function POST(req) {
         reference,
         amount,
         agencyFee,
+        landlordShare: amount - agencyFee,
         bookingId: booking.id,
         payerId: user.sub,
         kind: input.kind,
@@ -112,8 +111,8 @@ export async function POST(req) {
     });
     const payload: Record<string, any> = {
       email: user.email,
-      // The tenant pays the advertised rent. Paystack sends 3% to the platform
-      // and settles the remaining 97% to the landlord's subaccount.
+      // Rent is collected into the platform's Paystack balance and held until an
+      // administrator explicitly releases the landlord's 97% share.
       amount,
       currency: "NGN",
       reference,
@@ -125,8 +124,6 @@ export async function POST(req) {
         landlordShare: amount - agencyFee,
       },
     };
-    payload.subaccount = booking.listing.landlord.paystackSubaccountCode;
-    payload.transaction_charge = agencyFee;
     const paystack = await request(payload);
     const data = await paystack.json();
     if (!paystack.ok || !data.status) {

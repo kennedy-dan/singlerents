@@ -27,7 +27,10 @@ export async function POST(req) {
       );
     if (!user.isActive)
       return NextResponse.json(
-        { error: "This account is currently unavailable. Please contact support." },
+        {
+          error:
+            "This account is currently unavailable. Please contact support.",
+        },
         { status: 403 },
       );
     const token = await issue(user);

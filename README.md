@@ -17,7 +17,7 @@ The product supports the MVP journey from discovery to contact and payment: tena
 | Trust | Listing reviews and ratings, plus email-verification support. |
 | Notifications | In-app notifications with unread counts and live updates. |
 | Administration | Protected platform console for monitoring users, listings, bookings, payments, subscriptions, and platform fees; admins can manage account activation, roles, and listing status. |
-| Monetization | Listing trials, landlord subscriptions, Paystack payment initialization/verification/webhooks, and a 3% agency-fee field on rental payments. |
+| Monetization | Listing trials, landlord subscriptions, Paystack payment initialization/verification/webhooks, and an escrow-style rental flow: rent is held in the platform account until an admin releases the landlord's 97% share. |
 | Responsive UI | Animated, responsive landing page; mobile navigation; and a shared footer across the application. |
 
 ## Tech stack
@@ -145,7 +145,7 @@ vercel.json         Vercel WebSocket rewrite, Fluid Compute, and production buil
 3. A tenant searches listings, uses the map/filter interface, and opens a listing.
 4. The tenant starts a conversation or submits a booking request.
 5. The landlord manages the request in the dashboard; relevant users receive in-app updates.
-6. Paystack handles eligible listing, subscription, and rental-payment flows; completed rental payments retain the agency-fee amount.
+6. Rental payments are collected into the platform Paystack balance. Admins release the landlord's 97% share to the connected bank account after review; the platform retains the 3% fee.
 
 ## Administration
 

@@ -3,7 +3,10 @@ import { db } from "../../../../lib/db";
 import { requireUser } from "../../../../lib/auth";
 import { bad, unauthorized } from "../../../../lib/http";
 import { NextResponse } from "next/server";
-import { paidSubscription, photoLimitForPlan } from "../../../../lib/entitlements";
+import {
+  paidSubscription,
+  photoLimitForPlan,
+} from "../../../../lib/entitlements";
 const schema = z.object({
   title: z.string().min(5).optional(),
   description: z.string().min(20).optional(),
@@ -29,7 +32,11 @@ export async function PATCH(req, { params }) {
       where: { id, landlordId: u.sub },
     });
     if (!owned) return unauthorized();
-    const data = schema.parse(await req.json());
+    const body = await req.json();
+    console.log("PATCH /listing body:", body); // 👈 raw payload
+    console.log("current status:", owned.status, "-> requested:", body.status);
+
+    const data = schema.parse(body);
     if (data.photos) {
       const plan = await paidSubscription(u.sub);
       const limit = photoLimitForPlan(plan?.plan);

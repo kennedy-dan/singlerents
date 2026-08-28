@@ -22,6 +22,8 @@ export async function GET() {
             status: true,
             amount: true,
             agencyFee: true,
+            landlordShare: true,
+            payoutStatus: true,
             reference: true,
           },
         },

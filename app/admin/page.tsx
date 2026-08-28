@@ -184,20 +184,22 @@ export default function AdminPage() {
               />
             </AdminSection>
             <AdminSection title="Payments">
-              <Records
-                records={data.payments}
-                render={(item: any) => (
-                  <>
-                    <b>
-                      {money(item.amount)} · {item.kind}
-                    </b>
-                    <small>
-                      {item.payer.name} · {item.status} · fee{" "}
-                      {money(item.agencyFee)}
-                    </small>
-                  </>
-                )}
-              />
+              <div className="admin-table">
+                {data.payments.length ? data.payments.map((item: any) => (
+                  <div className="admin-row admin-record" key={item.id}>
+                    <div>
+                      <b>{money(item.amount)} · {item.kind}</b>
+                      <small>{item.payer.name} · {item.status} · fee {money(item.agencyFee)} · landlord {money(item.landlordShare)}</small>
+                    </div>
+                    {item.kind === "RENTAL" && item.status === "SUCCESS" && (
+                      <>
+                        <span className={`status ${item.payoutStatus === "RELEASED" ? "published" : "requested"}`}>{item.payoutStatus}</span>
+                        {(item.payoutStatus === "HELD" || item.payoutStatus === "FAILED") && <button className="button" disabled={updating === `payout-${item.id}`} onClick={() => update({ type: "payout", id: item.id }, `payout-${item.id}`)}>{updating === `payout-${item.id}` ? "Releasing…" : "Release 97%"}</button>}
+                      </>
+                    )}
+                  </div>
+                )) : <p className="muted">Nothing to show yet.</p>}
+              </div>
             </AdminSection>
             <AdminSection title="Subscriptions">
               <Records
